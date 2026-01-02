@@ -509,9 +509,17 @@ class EditorScene:
             projector.zoom = max(0.5, min(2.5, projector.zoom + event.y * 0.1))
             return True
 
-        # Mouse Rotation (Right Click Drag)
+        # Mouse Rotation (Right Click OR Left Click on Background)
         if event.type == pygame.MOUSEMOTION:
-            if event.buttons[2]: # Right button held
+            is_right_drag = event.buttons[2]
+            is_left_drag = event.buttons[0]
+            
+            # Check if any object is being dragged to prevent conflict
+            object_dragging = any(p.is_dragging for p in self.players) or \
+                              any(t.is_dragging for t in self.text_labels)
+            
+            # Rotate if Right Drag OR (Left Drag on empty space + Cursor Tool)
+            if is_right_drag or (is_left_drag and self.current_tool == 'cursor' and not object_dragging):
                 dx = event.rel[0]
                 projector.rotate(dx * 0.5)
                 self.slider_rot.val = projector.angle
