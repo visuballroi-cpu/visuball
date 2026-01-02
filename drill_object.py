@@ -31,6 +31,9 @@ class DrillObject:
         else:
             self.text_surf = None
 
+    def reset_position(self):
+        self.pos = self.start_pos.copy()
+
     def draw(self, surface, alpha=255):
         sx, sy = projector.to_screen(self.pos.x, self.pos.y)
         dist_scale = 0.6 + self.pos.y * 0.4 if projector.mode == '3D' else 1.0

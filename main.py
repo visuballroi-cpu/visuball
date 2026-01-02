@@ -1208,6 +1208,20 @@ class SceneManager:
         self.current_user = None
         self.scene = LoginScene(self)
         
+        # Global Theme Toggle
+        self.btn_theme = Button(SCREEN_WIDTH - 110, 20, 40, 40, "", self.toggle_theme, None, None, icon_shape='moon', radius=20)
+        self.update_theme_btn_style()
+
+    def toggle_theme(self):
+        new_mode = 'light' if theme.mode == 'dark' else 'dark'
+        theme.set_mode(new_mode)
+        self.update_theme_btn_style()
+
+    def update_theme_btn_style(self):
+        self.btn_theme.icon_shape = 'sun' if theme.mode == 'dark' else 'moon'
+        # In dark mode (sun icon), we want yellow sun. In light mode (moon icon), dark moon.
+        self.btn_theme.base_text = ACCENT_YELLOW if theme.mode == 'dark' else (50, 50, 100)
+        
     def switch_scene(self, scene_name, data=None):
         if scene_name == "login":
             self.scene = LoginScene(self)
@@ -1248,6 +1262,10 @@ class SceneManager:
                     SCREEN_WIDTH, SCREEN_HEIGHT = event.size
                     projector.update_config(SCREEN_WIDTH, SCREEN_HEIGHT)
                     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+                    
+                    # Update Global Theme Button Pos
+                    self.btn_theme.rect.x = SCREEN_WIDTH - 110
+                    
                     # Re-init current scene to adapt to new dimensions if possible
                     # We preserve user/session data
                     if isinstance(self.scene, LoginScene):
@@ -1280,10 +1298,15 @@ class SceneManager:
                              if i < len(old_scene.players):
                                  p.pos = old_scene.players[i].pos.copy()
 
-                self.scene.handle_event(event)
+                # Handle Global Theme Toggle first
+                if self.btn_theme.handle_event(event):
+                    pass # Consumed by theme toggle
+                else:
+                    self.scene.handle_event(event)
 
             self.scene.update()
             self.scene.draw(screen)
+            self.btn_theme.draw(screen)
             
             pygame.display.flip()
             clock.tick(60)

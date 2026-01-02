@@ -69,8 +69,8 @@ class Pitch:
                 y1 = r / rows
                 y2 = (r + 1) / rows
                 
-                # Determine Color (Checkered)
-                if (c + r) % 2 == 0:
+                # Determine Color (Stripes along width - "Camp Nou" style)
+                if c % 2 == 0:
                     color = self.grass_base
                 else:
                     color = self.grass_dark
