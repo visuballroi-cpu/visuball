@@ -2,7 +2,7 @@ import type { MutableRefObject } from "react"
 import type { Player, Arrow, MovementPath } from "@/types"
 import type { Vec2 } from "@/utils/geometry"
 
-export type Tool = "drag" | "arrow" | "path"
+export type Tool = "drag" | "move" | "arrow" | "path"
 
 export type CameraPreset = "broadcast" | "tactical" | "top" | "end" | "ball"
 
@@ -62,6 +62,8 @@ export interface PitchSceneProps {
   overlays: Overlays
 
   cameraPreset: CameraPreset
+  /** 2D mode: fixed top-down view, rotation disabled */
+  flat?: boolean
   cameraNonce: number
 
   /** true while playing/scrubbing — disables editing affordances */

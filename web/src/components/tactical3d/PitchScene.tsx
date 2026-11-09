@@ -21,7 +21,7 @@ type Ctl = {
 const PRESETS: Record<Exclude<CameraPreset, "ball">, { pos: [number, number, number]; target: [number, number, number] }> = {
   broadcast: { pos: [0, 46, 76], target: [0, 0, 3] },
   tactical: { pos: [0, 76, 36], target: [0, 0, 2] },
-  top: { pos: [0, 112, 0.01], target: [0, 0, 0] },
+  top: { pos: [0, 150, 0.01], target: [0, 0, 0] },
   end: { pos: [-84, 24, 0.01], target: [8, 0, 0] },
 }
 
@@ -132,7 +132,7 @@ function SceneContents(props: PitchSceneProps) {
   const {
     players, ball, arrows, currentStep, nextStep, tool, arrowColor, arrowStart, previewPos,
     pathSelectedId, selectedPlayerId, showArrows, showPaths, showNames, overlays,
-    cameraPreset, cameraNonce, locked, bus, onTick, pickRef, hitTest,
+    cameraPreset, cameraNonce, flat, locked, bus, onTick, pickRef, hitTest,
     onPitchDown, onPitchMove, onDeleteArrow,
   } = props
 
@@ -220,8 +220,8 @@ function SceneContents(props: PitchSceneProps) {
 
       <OrbitControls
         makeDefault enableDamping dampingFactor={0.09} rotateSpeed={0.7} panSpeed={0.8} zoomSpeed={0.8}
-        minDistance={8} maxDistance={185} maxPolarAngle={Math.PI / 2.08}
-        enableRotate={orbitFree} enablePan={orbitFree}
+        minDistance={8} maxDistance={185} maxPolarAngle={flat ? 0.02 : Math.PI / 2.08}
+        enableRotate={orbitFree && !flat} enablePan={orbitFree}
       />
       <CameraRig preset={cameraPreset} nonce={cameraNonce} ballWorld={ballWorld} />
     </>

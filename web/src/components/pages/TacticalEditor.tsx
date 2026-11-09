@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import {
   ArrowLeft, Save, Undo2, Redo2, Sparkles, Brain, Play, Pause, SkipBack, SkipForward, Repeat,
-  MousePointer2, MoveUpRight, Route, Plus, Copy, Trash2, X, Eye, RotateCcw, Users, Video, Layers, Wand2,
+  MousePointer2, MoveUpRight, Route, Footprints, Plus, Copy, Trash2, X, Eye, RotateCcw, Users, Video, Layers, Wand2,
 } from "lucide-react"
 import { useCoachStore, useExerciseStore } from "@/store"
 import { generateId, getCurrentDate } from "@/utils"
@@ -45,7 +45,7 @@ type Hit =
   | { kind: "pathcp"; id: string; pos: Vec2 }
   | { kind: "ballpath"; pos: Vec2 }
 
-interface Drag { hit: Hit; dx: number; dy: number; moved: boolean }
+interface Drag { hit: Hit; dx: number; dy: number; moved: boolean; mode?: "move" }
 
 interface TacticalEditorProps {
   newDrillContext?: { date: string; type: "SESSION" | "DRILL" } | null
@@ -365,6 +365,7 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
   const [showNames, setShowNames] = useState(false)
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("broadcast")
   const [cameraNonce, setCameraNonce] = useState(0)
+  const [flat, setFlat] = useState(false)
   const pickRef = useRef<((cx: number, cy: number) => Vec2 | null) | null>(null)
   const dragRef = useRef<Drag | null>(null)
   const toolRef = useRef(tool)
@@ -441,6 +442,22 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     const i = idxRef.current
     const target = clampPt({ x: pt.x - d.dx, y: pt.y - d.dy })
     const h = d.hit
+    if (d.mode === "move") {
+      // FIFA-Manager style: the dragged ghost is the NEXT step's position; the next step is created on demand.
+      let st = stepsRef.current
+      if (i >= st.length - 1) {
+        const base = st[i]
+        const ns: EditorStep = {
+          ...base, id: generateId(), name: `${L("step")} ${st.length + 1}`, players: base.players.map((p) => ({ ...p, position: { ...p.position } })),
+          ballPosition: { ...base.ballPosition }, arrows: [], movementPaths: undefined, ballMovementPath: undefined,
+        }
+        st = [...st, ns]
+        setSteps(st)
+      }
+      if (h.kind === "player") patchStep(i + 1, (s) => ({ ...s, players: s.players.map((q) => (q.id === h.id ? { ...q, position: target } : q)) }), false)
+      else if (h.kind === "ball") patchStep(i + 1, (s) => ({ ...s, ballPosition: target }), false)
+      return
+    }
     if (h.kind === "player") {
       patchStep(i, (s) => ({ ...s, players: s.players.map((q) => (q.id === h.id ? { ...q, position: target } : q)) }), false)
     } else if (h.kind === "ball") {
@@ -462,7 +479,7 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
       const cp = cpFromMid(from.x, from.y, target.x, target.y, to.x, to.y)
       patchStep(i, (s) => ({ ...s, ballMovementPath: cp }), false)
     }
-  }, [patchStep])
+  }, [patchStep, L])
 
   const endDrag = useRef<() => void>(() => {})
 
@@ -471,10 +488,10 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     const t = toolRef.current
     const hit = findHit(x, y)
     const i = idxRef.current
-    const startDrag = (h: Hit) => {
+    const startDrag = (h: Hit, mode?: "move") => {
       // snapshot BEFORE the first change so a single undo reverts the whole gesture
       pushHistory()
-      dragRef.current = { hit: h, dx: x - h.pos.x, dy: y - h.pos.y, moved: false }
+      dragRef.current = { hit: h, dx: mode ? 0 : x - h.pos.x, dy: mode ? 0 : y - h.pos.y, moved: false, mode }
       const move = (e: PointerEvent) => {
         const d = dragRef.current
         const pt = pickRef.current?.(e.clientX, e.clientY)
@@ -502,6 +519,15 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
         setSelectedPlayerId(hit.kind === "player" ? hit.id : null)
         startDrag(hit)
       } else setSelectedPlayerId(null)
+      return
+    }
+
+    if (t === "move") {
+      if (hit && (hit.kind === "player" || hit.kind === "ball")) {
+        setPathSelectedId(hit.kind === "player" ? hit.id : null)
+        setSelectedPlayerId(hit.kind === "player" ? hit.id : null)
+        startDrag(hit, "move")
+      }
       return
     }
 
@@ -708,9 +734,11 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
       if (e.key === "ArrowRight") { goto(idxRef.current + (rtl ? -1 : 1)); return }
       if (e.key === "ArrowLeft") { goto(idxRef.current + (rtl ? 1 : -1)); return }
       if (e.key === "Escape") { setArrowStart(null); setPathSelectedId(null); setSelectedPlayerId(null); return }
+      if (!mod && e.key.toLowerCase() === "v") toggleViewRef.current()
       if (!mod && e.key === "1") chooseTool("drag")
-      if (!mod && e.key === "2") chooseTool("arrow")
-      if (!mod && e.key === "3") chooseTool("path")
+      if (!mod && e.key === "2") chooseTool("move")
+      if (!mod && e.key === "3") chooseTool("arrow")
+      if (!mod && e.key === "4") chooseTool("path")
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
@@ -719,7 +747,8 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
   // ── Derived view data ──────────────────────────────────────────────────────
   const hint =
     locked ? L("frozen")
-    : tool === "drag" ? L("hintDrag")
+    : tool === "move" ? L("hintMove")
+    : tool === "drag" ? (flat ? "" : L("hintDrag"))
     : tool === "arrow" ? (arrowStart ? L("hintArrow2") : L("hintArrow1"))
     : !next ? L("hintPathNeed")
     : pathSelectedId ? L("hintPathSel") : L("hintPath")
@@ -733,6 +762,13 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     { k: "end", label: "camEnd" }, { k: "ball", label: "camBall" },
   ]
   const setCam = (k: CameraPreset) => { setCameraPreset(k); setCameraNonce((n) => n + 1) }
+  const toggleView = () => {
+    const f = !flat
+    setFlat(f)
+    setCam(f ? "top" : "broadcast")
+  }
+  const toggleViewRef = useRef(toggleView)
+  toggleViewRef.current = toggleView
 
   const field: CSSProperties = {
     background: c.field, border: `1px solid ${c.border}`, color: c.text, borderRadius: 10, fontSize: 13, outline: "none",
@@ -763,7 +799,7 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
           tool={tool} arrowColor={arrowColor} arrowStart={arrowStart} previewPos={previewPos}
           pathSelectedId={pathSelectedId} selectedPlayerId={selectedPlayerId}
           showArrows={showArrows} showPaths={showPaths} showNames={showNames} overlays={overlays}
-          cameraPreset={cameraPreset} cameraNonce={cameraNonce} locked={locked}
+          cameraPreset={cameraPreset} cameraNonce={cameraNonce} flat={flat} locked={locked}
           bus={bus} onTick={onTick} pickRef={pickRef} hitTest={hitTest}
           onPitchDown={onPitchDown} onPitchMove={onPitchMove} onDeleteArrow={deleteArrow}
           errorTitle={L("webglTitle")} errorHint={L("webglHint")} retryLabel={L("retry")}
@@ -782,6 +818,10 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
         <IconBtn c={c} onClick={undo} disabled={history.current.undo.length === 0} title={`${L("undo")} (Ctrl+Z)`}><Undo2 size={17} /></IconBtn>
         <IconBtn c={c} onClick={redo} disabled={history.current.redo.length === 0} title={`${L("redo")} (Ctrl+Shift+Z)`}><Redo2 size={17} /></IconBtn>
         <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", padding: 3, borderRadius: 11, background: c.field }} role="group" aria-label="2D / 3D">
+          <IconBtn c={c} wide active={!flat} onClick={() => flat && toggleView()} title="3D (V)">3D</IconBtn>
+          <IconBtn c={c} wide active={flat} onClick={() => !flat && toggleView()} title="2D (V)">2D</IconBtn>
+        </div>
         <IconBtn c={c} onClick={runAnalysis} disabled={analyzing} wide title={L("analyze")}>
           <Brain size={16} />{analyzing ? L("analyzing") : L("analyze")}
         </IconBtn>
@@ -807,8 +847,11 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
         <Section c={c} icon={<MousePointer2 size={12} />} title={L("tools")}>
           <div style={{ display: "flex", gap: 4 }}>
             <IconBtn c={c} active={tool === "drag"} onClick={() => chooseTool("drag")} wide title={`${L("select")} (1)`}><MousePointer2 size={15} />{L("select")}</IconBtn>
-            <IconBtn c={c} active={tool === "arrow"} onClick={() => chooseTool("arrow")} wide title={`${L("arrow")} (2)`}><MoveUpRight size={15} /></IconBtn>
-            <IconBtn c={c} active={tool === "path"} onClick={() => chooseTool("path")} wide title={`${L("path")} (3)`}><Route size={15} /></IconBtn>
+            <IconBtn c={c} active={tool === "arrow"} onClick={() => chooseTool("arrow")} wide title={`${L("arrow")} (3)`}><MoveUpRight size={15} /></IconBtn>
+            <IconBtn c={c} active={tool === "path"} onClick={() => chooseTool("path")} wide title={`${L("path")} (4)`}><Route size={15} /></IconBtn>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            <IconBtn c={c} wide active={tool === "move"} onClick={() => chooseTool("move")} title={`${L("move")} (2)`}><Footprints size={15} /><span style={{ flex: 1, textAlign: "start" }}>{L("move")}</span></IconBtn>
           </div>
           {tool === "arrow" && (
             <div style={{ display: "flex", gap: 7, marginTop: 10 }}>
@@ -857,16 +900,16 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
       </aside>}
 
       {/* Camera presets */}
-      <div className="vb-in" style={{ ...glass, position: "absolute", top: 76, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 14, zIndex: 15, maxWidth: "calc(100vw - 520px)", overflowX: "auto" }}>
+      {!flat && <div className="vb-in" style={{ ...glass, position: "absolute", top: 76, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 2, padding: 4, borderRadius: 14, zIndex: 15, maxWidth: "calc(100vw - 520px)", overflowX: "auto" }}>
         <Video size={14} style={{ margin: "0 8px", color: c.sub, flexShrink: 0 }} />
         {camBtns.map((b) => (
           <IconBtn key={b.k} c={c} wide active={cameraPreset === b.k} onClick={() => setCam(b.k)}>{L(b.label)}</IconBtn>
         ))}
-      </div>
+      </div>}
 
       {/* Hint / frozen banner */}
       <div style={{ position: "absolute", bottom: 148, left: "50%", transform: "translateX(-50%)", zIndex: 14, display: "flex", gap: 8, alignItems: "center" }}>
-        <div style={{ ...glass, borderRadius: 999, padding: "6px 14px", fontSize: 12, color: c.sub, whiteSpace: "nowrap" }}>{hint}</div>
+        {hint && <div style={{ ...glass, borderRadius: 999, padding: "6px 14px", fontSize: 12, color: c.sub, whiteSpace: "nowrap" }}>{hint}</div>}
         {frozen && !playing && (
           <IconBtn c={c} wide tone="primary" onClick={() => goto(Math.round(headRef.current), false)}><Eye size={14} />{L("editHere")}</IconBtn>
         )}

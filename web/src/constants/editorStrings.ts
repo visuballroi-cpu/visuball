@@ -20,6 +20,7 @@ const en = {
   hintPath: "Click a player to edit their run", hintPathSel: "Drag the ● to curve the run", hintPathNeed: "Add another step first",
   webglTitle: "The 3D pitch couldn't start", webglHint: "Your browser or graphics driver may have WebGL disabled. Your drill data is safe.",
   retry: "Try again", players: "players", steps: "steps", ball: "Ball", delete: "Delete",
+  move: "Quick move", hintMove: "Drag a player to where it should run — the next step is created for you",
 } as const
 
 export type EdKey = keyof typeof en
@@ -45,6 +46,7 @@ const he: Dict = {
   hintPath: "לחץ על שחקן כדי לערוך את הריצה שלו", hintPathSel: "גרור את ה-● כדי לעקם את הריצה", hintPathNeed: "הוסף קודם שלב נוסף",
   webglTitle: "המגרש התלת-ממדי לא עלה", webglHint: "ייתכן ש-WebGL כבוי בדפדפן או במנהל ההתקן הגרפי. נתוני התרגיל שלך שמורים.",
   retry: "נסה שוב", players: "שחקנים", steps: "שלבים", ball: "כדור", delete: "מחק",
+  move: "תנועה מהירה", hintMove: "גרור שחקן ליעד שאליו הוא ירוץ — השלב הבא נוצר אוטומטית",
 }
 
 const es: Dict = {
@@ -67,6 +69,7 @@ const es: Dict = {
   hintPath: "Haz clic en un jugador para editar su carrera", hintPathSel: "Arrastra el ● para curvar la carrera", hintPathNeed: "Añade primero otro paso",
   webglTitle: "No se pudo iniciar el campo 3D", webglHint: "Puede que WebGL esté desactivado. Tus datos están a salvo.",
   retry: "Reintentar", players: "jugadores", steps: "pasos", ball: "Balón", delete: "Eliminar",
+  move: "Mov. rápido", hintMove: "Arrastra un jugador al destino — el siguiente paso se crea solo",
 }
 
 const pt: Dict = {
@@ -89,6 +92,7 @@ const pt: Dict = {
   hintPath: "Clique num jogador para editar a corrida", hintPathSel: "Arraste o ● para curvar a corrida", hintPathNeed: "Adicione antes outra etapa",
   webglTitle: "Não foi possível iniciar o campo 3D", webglHint: "O WebGL pode estar desativado. Seus dados estão seguros.",
   retry: "Tentar de novo", players: "jogadores", steps: "etapas", ball: "Bola", delete: "Excluir",
+  move: "Mov. rápido", hintMove: "Arraste um jogador ao destino — a próxima etapa é criada sozinha",
 }
 
 const de: Dict = {
@@ -111,6 +115,7 @@ const de: Dict = {
   hintPath: "Spieler anklicken, um seinen Laufweg zu bearbeiten", hintPathSel: "● ziehen, um den Laufweg zu krümmen", hintPathNeed: "Zuerst einen weiteren Schritt hinzufügen",
   webglTitle: "Das 3D-Spielfeld konnte nicht starten", webglHint: "WebGL ist evtl. deaktiviert. Deine Daten sind sicher.",
   retry: "Erneut versuchen", players: "Spieler", steps: "Schritte", ball: "Ball", delete: "Löschen",
+  move: "Schnell-Lauf", hintMove: "Spieler zum Ziel ziehen — der nächste Schritt entsteht automatisch",
 }
 
 const it: Dict = {
@@ -133,6 +138,7 @@ const it: Dict = {
   hintPath: "Clicca un giocatore per modificare la corsa", hintPathSel: "Trascina il ● per curvare la corsa", hintPathNeed: "Aggiungi prima un'altra fase",
   webglTitle: "Impossibile avviare il campo 3D", webglHint: "WebGL potrebbe essere disattivato. I tuoi dati sono al sicuro.",
   retry: "Riprova", players: "giocatori", steps: "fasi", ball: "Palla", delete: "Elimina",
+  move: "Mov. rapido", hintMove: "Trascina un giocatore a destinazione — la fase successiva si crea da sola",
 }
 
 const ru: Dict = {
@@ -155,6 +161,7 @@ const ru: Dict = {
   hintPath: "Нажмите на игрока, чтобы изменить его маршрут", hintPathSel: "Тяните ●, чтобы изогнуть маршрут", hintPathNeed: "Сначала добавьте ещё один шаг",
   webglTitle: "Не удалось запустить 3D-поле", webglHint: "Возможно, WebGL отключён. Ваши данные в безопасности.",
   retry: "Повторить", players: "игроков", steps: "шагов", ball: "Мяч", delete: "Удалить",
+  move: "Быстрый ход", hintMove: "Перетащите игрока в точку бега — следующий шаг создастся сам",
 }
 
 const ar: Dict = {
@@ -177,6 +184,7 @@ const ar: Dict = {
   hintPath: "انقر على لاعب لتعديل جريه", hintPathSel: "اسحب ● لثني المسار", hintPathNeed: "أضف خطوة أخرى أولاً",
   webglTitle: "تعذّر تشغيل الملعب ثلاثي الأبعاد", webglHint: "قد يكون WebGL معطّلاً. بياناتك بأمان.",
   retry: "حاول مجدداً", players: "لاعبين", steps: "خطوات", ball: "الكرة", delete: "حذف",
+  move: "حركة سريعة", hintMove: "اسحب لاعباً إلى وجهته — تُنشأ الخطوة التالية تلقائياً",
 }
 
 export const EDITOR_STRINGS: Record<string, Partial<Dict>> = { en, he, es, pt, de, it, ru, ar }

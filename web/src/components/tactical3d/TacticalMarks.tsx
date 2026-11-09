@@ -168,7 +168,7 @@ export default function TacticalMarks({
       )}
 
       {/* ── movement paths (path tool): current → next step ── */}
-      {tool === "path" && showPaths && currentStep && nextStep && !locked && (() => {
+      {(tool === "path" || tool === "move") && showPaths && currentStep && nextStep && !locked && (() => {
         const items = currentStep.players.map((p) => {
           const to = nextStep.players.find((q) => q.id === p.id)
           if (!to) return null
