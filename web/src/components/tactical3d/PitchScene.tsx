@@ -22,6 +22,9 @@ const PRESETS: Record<Exclude<CameraPreset, "ball">, { pos: [number, number, num
   broadcast: { pos: [0, 46, 76], target: [0, 0, 3] },
   tactical: { pos: [0, 76, 36], target: [0, 0, 2] },
   top: { pos: [0, 150, 0.01], target: [0, 0, 0] },
+  top90: { pos: [0.01, 215, 0], target: [0, 0, 0] },
+  top180: { pos: [0, 150, -0.01], target: [0, 0, 0] },
+  top270: { pos: [-0.01, 215, 0], target: [0, 0, 0] },
   end: { pos: [-84, 24, 0.01], target: [8, 0, 0] },
 }
 
@@ -219,9 +222,9 @@ function SceneContents(props: PitchSceneProps) {
       />
 
       <OrbitControls
-        makeDefault enableDamping dampingFactor={0.22} rotateSpeed={0.8} panSpeed={0.9} zoomSpeed={1.4}
+        makeDefault enableDamping={false} dampingFactor={0.22} rotateSpeed={0.8} panSpeed={0.9} zoomSpeed={1.4}
         minDistance={8} maxDistance={185} maxPolarAngle={flat ? 0.02 : Math.PI / 2.08}
-        enableRotate={orbitFree && !flat} enablePan={orbitFree}
+        enableRotate={orbitFree} enablePan={orbitFree}
       />
       <CameraRig preset={cameraPreset} nonce={cameraNonce} ballWorld={ballWorld} />
     </>
@@ -234,7 +237,7 @@ export default function PitchScene(props: PitchSceneProps & { errorTitle?: strin
     <SceneErrorBoundary title={errorTitle} hint={errorHint} retryLabel={retryLabel}>
       <Canvas
         shadows
-        dpr={[1, 1.5]}
+        dpr={scene.flat ? [1.5, 2] : [1, 1.5]}
         camera={{ fov: 38, near: 0.5, far: 700, position: [0, 40, 64] }}
         gl={{ antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: false }}
         style={{ touchAction: "none" }}

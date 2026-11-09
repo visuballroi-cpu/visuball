@@ -4,7 +4,7 @@ import type { Vec2 } from "@/utils/geometry"
 
 export type Tool = "drag" | "move" | "arrow" | "path"
 
-export type CameraPreset = "broadcast" | "tactical" | "top" | "end" | "ball"
+export type CameraPreset = "broadcast" | "tactical" | "top" | "top90" | "top180" | "top270" | "end" | "ball"
 
 export interface Overlays {
   thirds: boolean

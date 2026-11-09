@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import {
-  ArrowLeft, Save, Undo2, Redo2, Sparkles, Brain, Play, Pause, SkipBack, SkipForward, Repeat,
+  RotateCw, ArrowLeft, Save, Undo2, Redo2, Sparkles, Brain, Play, Pause, SkipBack, SkipForward, Repeat,
   MousePointer2, MoveUpRight, Route, Footprints, Plus, Copy, Trash2, X, Eye, RotateCcw, Users, Video, Layers, Wand2,
 } from "lucide-react"
 import { useCoachStore, useExerciseStore } from "@/store"
@@ -366,6 +366,7 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("broadcast")
   const [cameraNonce, setCameraNonce] = useState(0)
   const [flat, setFlat] = useState(false)
+  const [spin, setSpin] = useState(0)
   const pickRef = useRef<((cx: number, cy: number) => Vec2 | null) | null>(null)
   const dragRef = useRef<Drag | null>(null)
   const toolRef = useRef(tool)
@@ -762,11 +763,13 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     { k: "end", label: "camEnd" }, { k: "ball", label: "camBall" },
   ]
   const setCam = (k: CameraPreset) => { setCameraPreset(k); setCameraNonce((n) => n + 1) }
+  const SPINS: CameraPreset[] = ["top", "top90", "top180", "top270"]
   const toggleView = () => {
     const f = !flat
-    setFlat(f)
+    setFlat(f); setSpin(0)
     setCam(f ? "top" : "broadcast")
   }
+  const rotate2D = () => { const n = (spin + 1) % 4; setSpin(n); setCam(SPINS[n]) }
   const toggleViewRef = useRef(toggleView)
   toggleViewRef.current = toggleView
 
@@ -822,6 +825,7 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
           <IconBtn c={c} wide active={!flat} onClick={() => flat && toggleView()} title="3D (V)">3D</IconBtn>
           <IconBtn c={c} wide active={flat} onClick={() => !flat && toggleView()} title="2D (V)">2D</IconBtn>
         </div>
+        {flat && <IconBtn c={c} onClick={rotate2D} title="Rotate 90°"><RotateCw size={16} /></IconBtn>}
         <IconBtn c={c} onClick={runAnalysis} disabled={analyzing} wide title={L("analyze")}>
           <Brain size={16} />{analyzing ? L("analyzing") : L("analyze")}
         </IconBtn>

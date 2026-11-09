@@ -12,7 +12,7 @@ function makeCanvas(w: number, h: number) {
 function finish(c: HTMLCanvasElement, srgb = true) {
   const tex = new THREE.CanvasTexture(c)
   if (srgb) tex.colorSpace = THREE.SRGBColorSpace
-  tex.anisotropy = 8
+  tex.anisotropy = 16
   tex.needsUpdate = true
   return tex
 }
