@@ -119,7 +119,7 @@ function Lights() {
       <ambientLight intensity={0.22} />
       <directionalLight
         position={[-34, 78, 46]} intensity={2.3} castShadow
-        shadow-mapSize={[2048, 2048]} shadow-bias={-0.0005} shadow-normalBias={0.05}
+        shadow-mapSize={[1536, 1536]} shadow-bias={-0.0005} shadow-normalBias={0.05}
         shadow-camera-left={-72} shadow-camera-right={72} shadow-camera-top={52} shadow-camera-bottom={-52}
         shadow-camera-near={5} shadow-camera-far={220}
       />
@@ -219,7 +219,7 @@ function SceneContents(props: PitchSceneProps) {
       />
 
       <OrbitControls
-        makeDefault enableDamping dampingFactor={0.09} rotateSpeed={0.7} panSpeed={0.8} zoomSpeed={0.8}
+        makeDefault enableDamping dampingFactor={0.22} rotateSpeed={0.8} panSpeed={0.9} zoomSpeed={1.4}
         minDistance={8} maxDistance={185} maxPolarAngle={flat ? 0.02 : Math.PI / 2.08}
         enableRotate={orbitFree && !flat} enablePan={orbitFree}
       />
@@ -233,8 +233,8 @@ export default function PitchScene(props: PitchSceneProps & { errorTitle?: strin
   return (
     <SceneErrorBoundary title={errorTitle} hint={errorHint} retryLabel={retryLabel}>
       <Canvas
-        shadows="soft"
-        dpr={[1, 1.75]}
+        shadows
+        dpr={[1, 1.5]}
         camera={{ fov: 38, near: 0.5, far: 700, position: [0, 40, 64] }}
         gl={{ antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: false }}
         style={{ touchAction: "none" }}
