@@ -91,7 +91,7 @@ function CameraRig({ preset, nonce, ballWorld }: { preset: CameraPreset; nonce: 
   return null
 }
 
-// Fine-grained smooth wheel zoom: one notch ≈ 4%, eased toward a target distance (replaces OrbitControls' coarse zoom).
+// Fine-grained smooth wheel zoom: one notch ≈ 7%, eased toward a target distance (replaces OrbitControls' coarse zoom).
 function SmoothZoom({ min, max }: { min: number; max: number }) {
   const gl = useThree((st) => st.gl)
   const camera = useThree((st) => st.camera)
@@ -106,9 +106,9 @@ function SmoothZoom({ min, max }: { min: number; max: number }) {
       const c = controls
       if (!c) return
       const unit = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1
-      const d = clamp(e.deltaY * unit, -120, 120)
+      const d = clamp(e.deltaY * unit, -150, 150)
       const cur = goal.current ?? camera.position.distanceTo(c.target)
-      goal.current = clamp(cur * Math.exp(d * 0.0004), min, max)
+      goal.current = clamp(cur * Math.exp(d * 0.0007), min, max)
     }
     el.addEventListener("wheel", onWheel, { passive: false })
     return () => el.removeEventListener("wheel", onWheel)
@@ -119,7 +119,7 @@ function SmoothZoom({ min, max }: { min: number; max: number }) {
     if (!c || goal.current == null) return
     off.copy(camera.position).sub(c.target)
     const cur = off.length()
-    const k = 1 - Math.exp(-dt * 22)
+    const k = 1 - Math.exp(-dt * 40)
     const next = cur + (goal.current - cur) * k
     if (Math.abs(goal.current - next) < 0.02) { goal.current = null; return }
     camera.position.copy(c.target).addScaledVector(off.normalize(), next)
