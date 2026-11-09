@@ -122,3 +122,50 @@ export function generateLocalDrill(request: string): AIDrillResult {
   const t = TEMPLATES.find((x) => x.re.test(request))
   return (t ? t.build : buildUp)(request)
 }
+
+// ─── Requested step count ("10 שלבים", "ten steps", "עשרה שלבים") ───────────
+const HE_NUM: Record<string, number> = {
+  שני: 2, שניים: 2, שתי: 2, שתיים: 2, שלוש: 3, שלושה: 3, ארבע: 4, ארבעה: 4, חמש: 5, חמישה: 5,
+  שש: 6, שישה: 6, שבע: 7, שבעה: 7, שמונה: 8, תשע: 9, תשעה: 9, עשר: 10, עשרה: 10,
+
+  two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+}
+const WORD = "(?:שלבים|שלב|צעדים|סטפים|steps?|stages?|phases?)"
+
+export function parseStepCount(req: string): number | null {
+  const d = req.match(new RegExp(`(\\d{1,2})\\s*${WORD}`, "i")) ?? req.match(new RegExp(`${WORD}\\s*[:=]?\\s*(\\d{1,2})`, "i"))
+  let n: number | undefined = d ? parseInt(d[1], 10) : undefined
+  if (n === undefined) {
+    const w = req.match(new RegExp(`(\\S+)\\s+${WORD}`, "i"))
+    if (w) n = HE_NUM[w[1].toLowerCase()]
+  }
+  return n && n >= 1 && n <= 24 ? n : null
+}
+
+/** Resample a drill to exactly `n` steps, interpolating player/ball motion between keyframes. */
+export function fitSteps(steps: AIStep[], n: number): AIStep[] {
+  if (steps.length === 0 || n < 1) return steps
+  if (steps.length === n) return steps
+  if (n === 1) return [steps[0]]
+  const lerp = (a: number, b: number, f: number) => a + (b - a) * f
+  const mix = (A: AIPlayer[], B: AIPlayer[], f: number): AIPlayer[] =>
+    A.map((p) => {
+      const q = B.find((x) => x.number === p.number) ?? p
+      return { number: p.number, x: +lerp(p.x, q.x, f).toFixed(1), y: +lerp(p.y, q.y, f).toFixed(1) }
+    })
+  return Array.from({ length: n }, (_, i) => {
+    const t = (i / (n - 1)) * (steps.length - 1)
+    const a = Math.floor(t), b = Math.min(steps.length - 1, a + 1), f = t - a
+    const key = steps[Math.round(t)]
+    if (f === 0) return { ...steps[a], name: `${i + 1}. ${steps[a].name.replace(/^\d+\.\s*/, "")}` }
+    const sa = steps[a], sb = steps[b]
+    return {
+      name: `${i + 1}. ${key.name.replace(/^\d+\.\s*/, "")}`,
+      instruction: key.instruction,
+      homePlayers: mix(sa.homePlayers, sb.homePlayers, f),
+      awayPlayers: mix(sa.awayPlayers, sb.awayPlayers, f),
+      ball: { x: +lerp(sa.ball.x, sb.ball.x, f).toFixed(1), y: +lerp(sa.ball.y, sb.ball.y, f).toFixed(1) },
+      arrows: key.arrows,
+    }
+  })
+}

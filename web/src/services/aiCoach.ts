@@ -1,7 +1,7 @@
 // ─── AI Coach — Claude (primary) + Gemini (fallback) + Pollinations (last resort) ──
 import Anthropic from "@anthropic-ai/sdk"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { generateLocalDrill } from "./localDrill"
+import { generateLocalDrill, parseStepCount, fitSteps } from "./localDrill"
 
 export interface AIPlayer { number: number; x: number; y: number }
 export interface AIArrow  { fromX: number; fromY: number; toX: number; toY: number; color: string }
@@ -254,16 +254,25 @@ export async function generateDrill(
   const hasAnthropic = anthropicKey && anthropicKey !== "your_anthropic_api_key_here"
   const hasGemini    = geminiKey && geminiKey !== "your_gemini_api_key_here"
 
+  const wanted = parseStepCount(userRequest)
+  const req = wanted
+    ? `${userRequest}\n\nIMPORTANT: the "steps" array MUST contain EXACTLY ${wanted} steps - no more, no fewer. Each step is the next moment in the drill.`
+    : userRequest
+  const finish = (d: AIDrillResult): AIDrillResult => {
+    if (wanted && d.steps.length !== wanted) d.steps = fitSteps(d.steps, wanted)
+    return d
+  }
+
   const attempts: Array<() => Promise<string>> = []
-  if (hasAnthropic) attempts.push(() => callClaude(userRequest, anthropicKey, cb))
-  if (hasGemini)    attempts.push(() => callGemini(userRequest, geminiKey, cb))
-  attempts.push(() => callPollinations(userRequest, cb))
+  if (hasAnthropic) attempts.push(() => callClaude(req, anthropicKey, cb))
+  if (hasGemini)    attempts.push(() => callGemini(req, geminiKey, cb))
+  attempts.push(() => callPollinations(req, cb))
 
   for (const run of attempts) {
     try {
       const drill = parseResult(await run())
       drill.source = "ai"
-      return drill
+      return finish(drill)
     } catch (e) {
       console.warn("[AI drill] provider failed:", e)
     }
@@ -273,7 +282,7 @@ export async function generateDrill(
   cb("Building drill offline...")
   const local = generateLocalDrill(userRequest)
   local.source = "local"
-  return local
+  return finish(local)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
