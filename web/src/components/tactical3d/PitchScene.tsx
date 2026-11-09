@@ -91,6 +91,42 @@ function CameraRig({ preset, nonce, ballWorld }: { preset: CameraPreset; nonce: 
   return null
 }
 
+// Fine-grained smooth wheel zoom: one notch ≈ 4%, eased toward a target distance (replaces OrbitControls' coarse zoom).
+function SmoothZoom({ min, max }: { min: number; max: number }) {
+  const gl = useThree((st) => st.gl)
+  const camera = useThree((st) => st.camera)
+  const controls = useThree((st) => st.controls) as unknown as { target: THREE.Vector3 } | null
+  const goal = useRef<number | null>(null)
+  const off = useMemo(() => new THREE.Vector3(), [])
+
+  useEffect(() => {
+    const el = gl.domElement
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const c = controls
+      if (!c) return
+      const unit = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1
+      const d = clamp(e.deltaY * unit, -120, 120)
+      const cur = goal.current ?? camera.position.distanceTo(c.target)
+      goal.current = clamp(cur * Math.exp(d * 0.0004), min, max)
+    }
+    el.addEventListener("wheel", onWheel, { passive: false })
+    return () => el.removeEventListener("wheel", onWheel)
+  }, [gl, camera, controls, min, max])
+
+  useFrame((_, dt) => {
+    const c = controls
+    if (!c || goal.current == null) return
+    off.copy(camera.position).sub(c.target)
+    const cur = off.length()
+    const k = 1 - Math.exp(-dt * 22)
+    const next = cur + (goal.current - cur) * k
+    if (Math.abs(goal.current - next) < 0.02) { goal.current = null; return }
+    camera.position.copy(c.target).addScaledVector(off.normalize(), next)
+  })
+  return null
+}
+
 function Picker({ pickRef }: { pickRef: PitchSceneProps["pickRef"] }) {
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
@@ -229,10 +265,11 @@ function SceneContents(props: PitchSceneProps) {
       />
 
       <OrbitControls
-        makeDefault enableDamping={false} dampingFactor={0.22} rotateSpeed={0.8} panSpeed={0.9} zoomSpeed={1.4}
+        makeDefault enableDamping={false} dampingFactor={0.22} rotateSpeed={0.8} panSpeed={0.9} enableZoom={false}
         minDistance={8} maxDistance={185} maxPolarAngle={flat ? 0.02 : Math.PI / 2.08}
         enableRotate={orbitFree} enablePan={orbitFree}
       />
+      <SmoothZoom min={8} max={185} />
       <CameraRig preset={cameraPreset} nonce={cameraNonce} ballWorld={ballWorld} />
     </>
   )
