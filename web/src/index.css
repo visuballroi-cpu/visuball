@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1628 100%);
+  color: #f1f5f9;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ─── Light mode ─────────────────────────────────────────────────────────── */
+
+body.light {
+  background: linear-gradient(135deg, #edf2f7 0%, #e8eef6 50%, #f0f4f9 100%);
+  color: #1e293b;
+}
+
+/* Page wrappers */
+body.light .min-h-screen {
+  background: linear-gradient(135deg, #f5f8fc 0%, #edf2f8 50%, #f2f6fb 100%) !important;
+}
+
+/* Glassmorphism cards */
+body.light .glassmorphism {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(203, 213, 225, 0.7) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+body.light .glassmorphism::before {
+  background: linear-gradient(135deg, rgba(99,102,241,0.03), rgba(6,182,212,0.03)) !important;
+}
+
+/* Rounded cards (bg-slate-900/70, etc.) */
+body.light .rounded-2xl,
+body.light .rounded-xl {
+  background-color: white;
+  border-color: rgba(226, 232, 240, 0.9);
+}
+body.light .rounded-2xl.border,
+body.light .rounded-xl.border {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.04);
+}
+
+/* Override specific bg classes */
+body.light .bg-slate-950,
+body.light .bg-slate-900 { background-color: #ffffff !important; }
+body.light .bg-slate-800 { background-color: #f8fafc !important; }
+body.light .bg-slate-900\/70 { background-color: rgba(255,255,255,0.9) !important; }
+body.light .bg-slate-800\/60,
+body.light .bg-slate-800\/40 { background-color: rgba(241,245,249,0.9) !important; }
+
+/* Text overrides */
+body.light .text-white   { color: #0f172a !important; }
+body.light .text-slate-100 { color: #1e293b !important; }
+body.light .text-slate-200 { color: #334155 !important; }
+body.light .text-slate-300 { color: #475569 !important; }
+body.light .text-slate-400 { color: #64748b !important; }
+body.light .text-slate-500 { color: #94a3b8 !important; }
+body.light .text-slate-600 { color: #94a3b8 !important; }
+
+/* Border overrides */
+body.light .border-white\/5,
+body.light .border-slate-800,
+body.light .border-slate-700 { border-color: #e2e8f0 !important; }
+body.light .border-slate-700\/50,
+body.light .border-slate-700\/40,
+body.light .border-slate-700\/60 { border-color: rgba(226,232,240,0.8) !important; }
+
+/* Inputs */
+body.light input,
+body.light textarea,
+body.light select {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+body.light input::placeholder,
+body.light textarea::placeholder { color: #94a3b8 !important; }
+
+/* Status bar / bottom bars */
+body.light .border-t.border-white\/5 { border-color: #e2e8f0 !important; }
+
+/* SVG pitch — keep dark even in light mode */
+body.light svg.pitch-canvas,
+body.light .bg-slate-950.p-3 { background: #0f172a !important; }
+
+/* Scrollbar */
+body.light ::-webkit-scrollbar-track { background: rgba(226,232,240,0.4); }
+body.light ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #818cf8, #67e8f9);
+}
+
+/* ─── Shared scrollbar (dark) ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.1); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #d946ef 0%, #06b6d4 100%);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #ec4899 0%, #0891b2 100%);
+}
+
+/* ─── Glassmorphism (dark) ───────────────────────────────────────────────── */
+.glassmorphism {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(217, 70, 239, 0.15);
+  position: relative;
+}
+.glassmorphism::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(217,70,239,0.05), rgba(6,182,212,0.05));
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+.transition-smooth { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.gradient-text {
+  background: linear-gradient(135deg, #d946ef 0%, #06b6d4 50%, #84cc16 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+body.light .gradient-text {
+  background: linear-gradient(135deg, #7c3aed 0%, #0891b2 50%, #65a30d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+button { @apply transition-smooth; }
+button:active { @apply scale-95; }
+
+.card {
+  @apply rounded-xl border border-slate-700 bg-slate-800/30 backdrop-blur-sm p-4 transition-smooth hover:bg-slate-800/50 hover:border-neon-purple/30;
+}
+body.light .card {
+  @apply border-slate-200 bg-white hover:bg-slate-50 hover:border-indigo-300;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+svg.pitch-canvas { user-select: none; touch-action: none; }
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes slideInFromLeft  { from { opacity: 0; transform: translateX(-20px) } to { opacity: 1; transform: translateX(0) } }
+@keyframes slideInFromRight { from { opacity: 0; transform: translateX(20px)  } to { opacity: 1; transform: translateX(0) } }
+
+.animate-fade-in        { animation: fadeIn  0.3s ease-out; }
+.animate-slide-up       { animation: slideUp 0.4s ease-out; }
+.animate-slide-in-left  { animation: slideInFromLeft  0.3s ease-out; }
+.animate-slide-in-right { animation: slideInFromRight 0.3s ease-out; }
