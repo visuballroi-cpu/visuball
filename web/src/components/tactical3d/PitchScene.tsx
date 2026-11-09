@@ -135,7 +135,7 @@ function SceneContents(props: PitchSceneProps) {
   const {
     players, ball, arrows, currentStep, nextStep, tool, arrowColor, arrowStart, previewPos,
     pathSelectedId, selectedPlayerId, showArrows, showPaths, showNames, overlays,
-    cameraPreset, cameraNonce, flat, locked, bus, onTick, pickRef, hitTest,
+    cameraPreset, cameraNonce, flat, quality = "auto", locked, bus, onTick, pickRef, hitTest,
     onPitchDown, onPitchMove, onDeleteArrow,
   } = props
 
@@ -144,7 +144,8 @@ function SceneContents(props: PitchSceneProps) {
   const entityHover = useRef(0)
   const lastPt = useRef<{ x: number; y: number } | null>(null)
   const [lock, setLock] = useState(false)
-  const [shadowsOn, setShadowsOn] = useState(true)
+  const [autoShadows, setAutoShadows] = useState(false)
+  const shadowsOn = quality === "high" || (quality === "auto" && autoShadows)
 
   const applyLock = useCallback((v: boolean) => {
     setLock((prev) => (prev === v ? prev : v))
@@ -196,9 +197,11 @@ function SceneContents(props: PitchSceneProps) {
     <>
       <color attach="background" args={["#060913"]} />
       <fog attach="fog" args={["#060913", 150, 360]} />
-      <PerformanceMonitor
-        flipflops={3} onDecline={() => setShadowsOn(false)} onFallback={() => setShadowsOn(false)} onIncline={() => setShadowsOn(true)}
-      />
+      {quality === "auto" && (
+        <PerformanceMonitor
+          flipflops={3} onDecline={() => setAutoShadows(false)} onFallback={() => setAutoShadows(false)} onIncline={() => setAutoShadows(true)}
+        />
+      )}
       <AdaptiveDpr pixelated={false} />
       <AdaptiveEvents />
       <Lights shadows={shadowsOn} />
@@ -244,7 +247,7 @@ export default function PitchScene(props: PitchSceneProps & { errorTitle?: strin
       <Canvas
         shadows
         performance={{ min: 0.45, max: 1, debounce: 150 }}
-        dpr={scene.flat ? [1.5, 2] : [1, 1.5]}
+        dpr={scene.quality === "low" ? [1, 1] : scene.quality === "high" ? [1, 2] : scene.flat ? [1.5, 2] : [1, 1.5]}
         camera={{ fov: 38, near: 0.5, far: 700, position: [0, 40, 64] }}
         gl={{ antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: false }}
         style={{ touchAction: "none" }}

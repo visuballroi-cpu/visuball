@@ -20,6 +20,7 @@ const en = {
   hintPath: "Click a player to edit their run", hintPathSel: "Click the grass to add a waypoint · drag ● to reshape · click ● to remove · drag the white ● to move the destination", hintPathNeed: "Add another step first",
   webglTitle: "The 3D pitch couldn't start", webglHint: "Your browser or graphics driver may have WebGL disabled. Your drill data is safe.",
   retry: "Try again", players: "players", steps: "steps", ball: "Ball", delete: "Delete",
+  quality: "Graphics quality",
 } as const
 
 export type EdKey = keyof typeof en
@@ -45,6 +46,7 @@ const he: Dict = {
   hintPath: "לחץ על שחקן כדי לערוך את הריצה שלו", hintPathSel: "לחץ על הדשא להוספת נקודת ציון · גרור ● לעיצוב המסלול · לחיצה על ● מסירה אותה · הנקודה הלבנה מזיזה את היעד", hintPathNeed: "הוסף קודם שלב נוסף",
   webglTitle: "המגרש התלת-ממדי לא עלה", webglHint: "ייתכן ש-WebGL כבוי בדפדפן או במנהל ההתקן הגרפי. נתוני התרגיל שלך שמורים.",
   retry: "נסה שוב", players: "שחקנים", steps: "שלבים", ball: "כדור", delete: "מחק",
+  quality: "איכות גרפיקה",
 }
 
 const es: Dict = {
@@ -67,6 +69,7 @@ const es: Dict = {
   hintPath: "Haz clic en un jugador para editar su carrera", hintPathSel: "Haz clic en el césped para añadir un punto · arrastra ● para ajustar · clic en ● lo elimina · el ● blanco mueve el destino", hintPathNeed: "Añade primero otro paso",
   webglTitle: "No se pudo iniciar el campo 3D", webglHint: "Puede que WebGL esté desactivado. Tus datos están a salvo.",
   retry: "Reintentar", players: "jugadores", steps: "pasos", ball: "Balón", delete: "Eliminar",
+  quality: "Calidad gráfica",
 }
 
 const pt: Dict = {
@@ -89,6 +92,7 @@ const pt: Dict = {
   hintPath: "Clique num jogador para editar a corrida", hintPathSel: "Clique no gramado para adicionar um ponto · arraste ● para ajustar · clique em ● para remover · o ● branco move o destino", hintPathNeed: "Adicione antes outra etapa",
   webglTitle: "Não foi possível iniciar o campo 3D", webglHint: "O WebGL pode estar desativado. Seus dados estão seguros.",
   retry: "Tentar de novo", players: "jogadores", steps: "etapas", ball: "Bola", delete: "Excluir",
+  quality: "Qualidade gráfica",
 }
 
 const de: Dict = {
@@ -111,6 +115,7 @@ const de: Dict = {
   hintPath: "Spieler anklicken, um seinen Laufweg zu bearbeiten", hintPathSel: "Rasen anklicken = Wegpunkt hinzufügen · ● ziehen = formen · ● anklicken = entfernen · weißes ● verschiebt das Ziel", hintPathNeed: "Zuerst einen weiteren Schritt hinzufügen",
   webglTitle: "Das 3D-Spielfeld konnte nicht starten", webglHint: "WebGL ist evtl. deaktiviert. Deine Daten sind sicher.",
   retry: "Erneut versuchen", players: "Spieler", steps: "Schritte", ball: "Ball", delete: "Löschen",
+  quality: "Grafikqualität",
 }
 
 const it: Dict = {
@@ -133,6 +138,7 @@ const it: Dict = {
   hintPath: "Clicca un giocatore per modificare la corsa", hintPathSel: "Clicca sul prato per aggiungere un punto · trascina ● per modellare · clic su ● lo rimuove · il ● bianco sposta la destinazione", hintPathNeed: "Aggiungi prima un'altra fase",
   webglTitle: "Impossibile avviare il campo 3D", webglHint: "WebGL potrebbe essere disattivato. I tuoi dati sono al sicuro.",
   retry: "Riprova", players: "giocatori", steps: "fasi", ball: "Palla", delete: "Elimina",
+  quality: "Qualità grafica",
 }
 
 const ru: Dict = {
@@ -155,6 +161,7 @@ const ru: Dict = {
   hintPath: "Нажмите на игрока, чтобы изменить его маршрут", hintPathSel: "Нажмите на газон, чтобы добавить точку · тяните ● для изменения · клик по ● удаляет · белый ● двигает цель", hintPathNeed: "Сначала добавьте ещё один шаг",
   webglTitle: "Не удалось запустить 3D-поле", webglHint: "Возможно, WebGL отключён. Ваши данные в безопасности.",
   retry: "Повторить", players: "игроков", steps: "шагов", ball: "Мяч", delete: "Удалить",
+  quality: "Качество графики",
 }
 
 const ar: Dict = {
@@ -177,6 +184,7 @@ const ar: Dict = {
   hintPath: "انقر على لاعب لتعديل جريه", hintPathSel: "انقر على العشب لإضافة نقطة · اسحب ● لتعديل المسار · انقر على ● لحذفها · النقطة البيضاء تنقل الوجهة", hintPathNeed: "أضف خطوة أخرى أولاً",
   webglTitle: "تعذّر تشغيل الملعب ثلاثي الأبعاد", webglHint: "قد يكون WebGL معطّلاً. بياناتك بأمان.",
   retry: "حاول مجدداً", players: "لاعبين", steps: "خطوات", ball: "الكرة", delete: "حذف",
+  quality: "جودة الرسوميات",
 }
 
 export const EDITOR_STRINGS: Record<string, Partial<Dict>> = { en, he, es, pt, de, it, ru, ar }

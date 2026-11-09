@@ -385,6 +385,13 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
   const [cameraNonce, setCameraNonce] = useState(0)
   const [flat, setFlat] = useState(false)
   const [spin, setSpin] = useState(0)
+  const [quality, setQualityState] = useState<"auto" | "high" | "low">(() => {
+    try { const v = localStorage.getItem("visuball_quality"); return v === "high" || v === "low" ? v : "auto" } catch { return "auto" }
+  })
+  const setQuality = (v: "auto" | "high" | "low") => {
+    setQualityState(v)
+    try { localStorage.setItem("visuball_quality", v) } catch { /* private mode */ }
+  }
   const pickRef = useRef<((cx: number, cy: number) => Vec2 | null) | null>(null)
   const dragRef = useRef<Drag | null>(null)
   const toolRef = useRef(tool)
@@ -815,7 +822,7 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
           tool={tool} arrowColor={arrowColor} arrowStart={arrowStart} previewPos={previewPos}
           pathSelectedId={pathSelectedId} selectedPlayerId={selectedPlayerId}
           showArrows={showArrows} showPaths={showPaths} showNames={showNames} overlays={overlays}
-          cameraPreset={cameraPreset} cameraNonce={cameraNonce} flat={flat} locked={locked}
+          cameraPreset={cameraPreset} cameraNonce={cameraNonce} flat={flat} quality={quality} locked={locked}
           bus={bus} onTick={onTick} pickRef={pickRef} hitTest={hitTest}
           onPitchDown={onPitchDown} onPitchMove={onPitchMove} onDeleteArrow={deleteArrow}
           errorTitle={L("webglTitle")} errorHint={L("webglHint")} retryLabel={L("retry")}
@@ -910,6 +917,13 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
           <Toggle c={c} on={showArrows} onChange={() => setShowArrows(!showArrows)} label={L("arrowsShow")} />
           <Toggle c={c} on={showPaths} onChange={() => setShowPaths(!showPaths)} label={L("pathsShow")} />
           <Toggle c={c} on={showNames} onChange={() => setShowNames(!showNames)} label={L("names")} />
+          <div style={{ height: 1, background: c.border, margin: "6px 0" }} />
+          <div style={{ fontSize: 12.5, marginBottom: 6 }}>{L("quality")}</div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {(["auto", "high", "low"] as const).map((q) => (
+              <IconBtn key={q} c={c} wide active={quality === q} onClick={() => setQuality(q)}>{q === "auto" ? "Auto" : q === "high" ? "High" : "Low"}</IconBtn>
+            ))}
+          </div>
         </Section>
       </aside>}
 

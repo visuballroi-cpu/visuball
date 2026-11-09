@@ -64,6 +64,8 @@ export interface PitchSceneProps {
   cameraPreset: CameraPreset
   /** 2D mode: fixed top-down view, rotation disabled */
   flat?: boolean
+  /** graphics quality: auto adapts to the GPU, low = no shadows + 1x pixel ratio */
+  quality?: "auto" | "high" | "low"
   cameraNonce: number
 
   /** true while playing/scrubbing — disables editing affordances */
