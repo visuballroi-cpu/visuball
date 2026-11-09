@@ -1,7 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber"
-import { OrbitControls } from "@react-three/drei"
+import { OrbitControls, AdaptiveDpr, AdaptiveEvents, PerformanceMonitor } from "@react-three/drei"
 import { HALF_W, HALF_H, clamp, damp, easeInOut } from "@/utils/geometry"
 import type { CameraPreset, PitchSceneProps } from "./types"
 import Pitch3D from "./Pitch3D"
@@ -115,13 +115,13 @@ function FrameDriver({ onTick }: { onTick: (dt: number) => void }) {
   return null
 }
 
-function Lights() {
+function Lights({ shadows }: { shadows: boolean }) {
   return (
     <>
       <hemisphereLight args={["#c3d7ff", "#0a2412", 0.7]} />
       <ambientLight intensity={0.22} />
       <directionalLight
-        position={[-34, 78, 46]} intensity={2.3} castShadow
+        position={[-34, 78, 46]} intensity={2.3} castShadow={shadows}
         shadow-mapSize={[1536, 1536]} shadow-bias={-0.0005} shadow-normalBias={0.05}
         shadow-camera-left={-72} shadow-camera-right={72} shadow-camera-top={52} shadow-camera-bottom={-52}
         shadow-camera-near={5} shadow-camera-far={220}
@@ -144,6 +144,7 @@ function SceneContents(props: PitchSceneProps) {
   const entityHover = useRef(0)
   const lastPt = useRef<{ x: number; y: number } | null>(null)
   const [lock, setLock] = useState(false)
+  const [shadowsOn, setShadowsOn] = useState(true)
 
   const applyLock = useCallback((v: boolean) => {
     setLock((prev) => (prev === v ? prev : v))
@@ -195,7 +196,12 @@ function SceneContents(props: PitchSceneProps) {
     <>
       <color attach="background" args={["#060913"]} />
       <fog attach="fog" args={["#060913", 150, 360]} />
-      <Lights />
+      <PerformanceMonitor
+        flipflops={3} onDecline={() => setShadowsOn(false)} onFallback={() => setShadowsOn(false)} onIncline={() => setShadowsOn(true)}
+      />
+      <AdaptiveDpr pixelated={false} />
+      <AdaptiveEvents />
+      <Lights shadows={shadowsOn} />
       <FrameDriver onTick={onTick} />
       <Picker pickRef={pickRef} />
 
@@ -237,6 +243,7 @@ export default function PitchScene(props: PitchSceneProps & { errorTitle?: strin
     <SceneErrorBoundary title={errorTitle} hint={errorHint} retryLabel={retryLabel}>
       <Canvas
         shadows
+        performance={{ min: 0.45, max: 1, debounce: 150 }}
         dpr={scene.flat ? [1.5, 2] : [1, 1.5]}
         camera={{ fov: 38, near: 0.5, far: 700, position: [0, 40, 64] }}
         gl={{ antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: false }}
