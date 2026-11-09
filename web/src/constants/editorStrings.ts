@@ -17,10 +17,9 @@ const en = {
   frozen: "Frozen mid-move", editHere: "Edit here",
   hintDrag: "Drag players and the ball · right-drag to rotate · scroll to zoom",
   hintArrow1: "Click a player to start the arrow", hintArrow2: "Click the destination — a spot or a teammate",
-  hintPath: "Click a player to edit their run", hintPathSel: "Drag the ● to curve the run", hintPathNeed: "Add another step first",
+  hintPath: "Click a player to edit their run", hintPathSel: "Click the grass to add a waypoint · drag ● to reshape · click ● to remove · drag the white ● to move the destination", hintPathNeed: "Add another step first",
   webglTitle: "The 3D pitch couldn't start", webglHint: "Your browser or graphics driver may have WebGL disabled. Your drill data is safe.",
   retry: "Try again", players: "players", steps: "steps", ball: "Ball", delete: "Delete",
-  move: "Quick move", hintMove: "Drag a player to where it should run — the next step is created for you",
 } as const
 
 export type EdKey = keyof typeof en
@@ -43,10 +42,9 @@ const he: Dict = {
   frozen: "מוקפא באמצע תנועה", editHere: "ערוך כאן",
   hintDrag: "גרור שחקנים וכדור · גרירה בכפתור ימני לסיבוב · גלגלת לזום",
   hintArrow1: "לחץ על שחקן כדי להתחיל חץ", hintArrow2: "לחץ על היעד — נקודה או חבר קבוצה",
-  hintPath: "לחץ על שחקן כדי לערוך את הריצה שלו", hintPathSel: "גרור את ה-● כדי לעקם את הריצה", hintPathNeed: "הוסף קודם שלב נוסף",
+  hintPath: "לחץ על שחקן כדי לערוך את הריצה שלו", hintPathSel: "לחץ על הדשא להוספת נקודת ציון · גרור ● לעיצוב המסלול · לחיצה על ● מסירה אותה · הנקודה הלבנה מזיזה את היעד", hintPathNeed: "הוסף קודם שלב נוסף",
   webglTitle: "המגרש התלת-ממדי לא עלה", webglHint: "ייתכן ש-WebGL כבוי בדפדפן או במנהל ההתקן הגרפי. נתוני התרגיל שלך שמורים.",
   retry: "נסה שוב", players: "שחקנים", steps: "שלבים", ball: "כדור", delete: "מחק",
-  move: "תנועה מהירה", hintMove: "גרור שחקן ליעד שאליו הוא ירוץ — השלב הבא נוצר אוטומטית",
 }
 
 const es: Dict = {
@@ -66,10 +64,9 @@ const es: Dict = {
   frozen: "Congelado a mitad de movimiento", editHere: "Editar aquí",
   hintDrag: "Arrastra jugadores y balón · clic derecho para rotar · rueda para zoom",
   hintArrow1: "Haz clic en un jugador para iniciar la flecha", hintArrow2: "Haz clic en el destino: un punto o un compañero",
-  hintPath: "Haz clic en un jugador para editar su carrera", hintPathSel: "Arrastra el ● para curvar la carrera", hintPathNeed: "Añade primero otro paso",
+  hintPath: "Haz clic en un jugador para editar su carrera", hintPathSel: "Haz clic en el césped para añadir un punto · arrastra ● para ajustar · clic en ● lo elimina · el ● blanco mueve el destino", hintPathNeed: "Añade primero otro paso",
   webglTitle: "No se pudo iniciar el campo 3D", webglHint: "Puede que WebGL esté desactivado. Tus datos están a salvo.",
   retry: "Reintentar", players: "jugadores", steps: "pasos", ball: "Balón", delete: "Eliminar",
-  move: "Mov. rápido", hintMove: "Arrastra un jugador al destino — el siguiente paso se crea solo",
 }
 
 const pt: Dict = {
@@ -89,10 +86,9 @@ const pt: Dict = {
   frozen: "Congelado no meio do movimento", editHere: "Editar aqui",
   hintDrag: "Arraste jogadores e bola · botão direito para girar · scroll para zoom",
   hintArrow1: "Clique num jogador para iniciar a seta", hintArrow2: "Clique no destino: um ponto ou um companheiro",
-  hintPath: "Clique num jogador para editar a corrida", hintPathSel: "Arraste o ● para curvar a corrida", hintPathNeed: "Adicione antes outra etapa",
+  hintPath: "Clique num jogador para editar a corrida", hintPathSel: "Clique no gramado para adicionar um ponto · arraste ● para ajustar · clique em ● para remover · o ● branco move o destino", hintPathNeed: "Adicione antes outra etapa",
   webglTitle: "Não foi possível iniciar o campo 3D", webglHint: "O WebGL pode estar desativado. Seus dados estão seguros.",
   retry: "Tentar de novo", players: "jogadores", steps: "etapas", ball: "Bola", delete: "Excluir",
-  move: "Mov. rápido", hintMove: "Arraste um jogador ao destino — a próxima etapa é criada sozinha",
 }
 
 const de: Dict = {
@@ -112,10 +108,9 @@ const de: Dict = {
   frozen: "Mitten in der Bewegung eingefroren", editHere: "Hier bearbeiten",
   hintDrag: "Spieler und Ball ziehen · Rechtsklick-Ziehen dreht · Scrollen zoomt",
   hintArrow1: "Spieler anklicken, um den Pfeil zu starten", hintArrow2: "Ziel anklicken — Punkt oder Mitspieler",
-  hintPath: "Spieler anklicken, um seinen Laufweg zu bearbeiten", hintPathSel: "● ziehen, um den Laufweg zu krümmen", hintPathNeed: "Zuerst einen weiteren Schritt hinzufügen",
+  hintPath: "Spieler anklicken, um seinen Laufweg zu bearbeiten", hintPathSel: "Rasen anklicken = Wegpunkt hinzufügen · ● ziehen = formen · ● anklicken = entfernen · weißes ● verschiebt das Ziel", hintPathNeed: "Zuerst einen weiteren Schritt hinzufügen",
   webglTitle: "Das 3D-Spielfeld konnte nicht starten", webglHint: "WebGL ist evtl. deaktiviert. Deine Daten sind sicher.",
   retry: "Erneut versuchen", players: "Spieler", steps: "Schritte", ball: "Ball", delete: "Löschen",
-  move: "Schnell-Lauf", hintMove: "Spieler zum Ziel ziehen — der nächste Schritt entsteht automatisch",
 }
 
 const it: Dict = {
@@ -135,10 +130,9 @@ const it: Dict = {
   frozen: "Fermo a metà movimento", editHere: "Modifica qui",
   hintDrag: "Trascina giocatori e palla · tasto destro per ruotare · rotella per lo zoom",
   hintArrow1: "Clicca un giocatore per iniziare la freccia", hintArrow2: "Clicca la destinazione: un punto o un compagno",
-  hintPath: "Clicca un giocatore per modificare la corsa", hintPathSel: "Trascina il ● per curvare la corsa", hintPathNeed: "Aggiungi prima un'altra fase",
+  hintPath: "Clicca un giocatore per modificare la corsa", hintPathSel: "Clicca sul prato per aggiungere un punto · trascina ● per modellare · clic su ● lo rimuove · il ● bianco sposta la destinazione", hintPathNeed: "Aggiungi prima un'altra fase",
   webglTitle: "Impossibile avviare il campo 3D", webglHint: "WebGL potrebbe essere disattivato. I tuoi dati sono al sicuro.",
   retry: "Riprova", players: "giocatori", steps: "fasi", ball: "Palla", delete: "Elimina",
-  move: "Mov. rapido", hintMove: "Trascina un giocatore a destinazione — la fase successiva si crea da sola",
 }
 
 const ru: Dict = {
@@ -158,10 +152,9 @@ const ru: Dict = {
   frozen: "Остановлено посреди движения", editHere: "Править здесь",
   hintDrag: "Перетаскивайте игроков и мяч · правая кнопка — вращение · колесо — масштаб",
   hintArrow1: "Нажмите на игрока, чтобы начать стрелку", hintArrow2: "Нажмите на цель — точку или партнёра",
-  hintPath: "Нажмите на игрока, чтобы изменить его маршрут", hintPathSel: "Тяните ●, чтобы изогнуть маршрут", hintPathNeed: "Сначала добавьте ещё один шаг",
+  hintPath: "Нажмите на игрока, чтобы изменить его маршрут", hintPathSel: "Нажмите на газон, чтобы добавить точку · тяните ● для изменения · клик по ● удаляет · белый ● двигает цель", hintPathNeed: "Сначала добавьте ещё один шаг",
   webglTitle: "Не удалось запустить 3D-поле", webglHint: "Возможно, WebGL отключён. Ваши данные в безопасности.",
   retry: "Повторить", players: "игроков", steps: "шагов", ball: "Мяч", delete: "Удалить",
-  move: "Быстрый ход", hintMove: "Перетащите игрока в точку бега — следующий шаг создастся сам",
 }
 
 const ar: Dict = {
@@ -181,10 +174,9 @@ const ar: Dict = {
   frozen: "متوقف في منتصف الحركة", editHere: "عدّل هنا",
   hintDrag: "اسحب اللاعبين والكرة · السحب بالزر الأيمن للتدوير · العجلة للتقريب",
   hintArrow1: "انقر على لاعب لبدء السهم", hintArrow2: "انقر على الوجهة — نقطة أو زميل",
-  hintPath: "انقر على لاعب لتعديل جريه", hintPathSel: "اسحب ● لثني المسار", hintPathNeed: "أضف خطوة أخرى أولاً",
+  hintPath: "انقر على لاعب لتعديل جريه", hintPathSel: "انقر على العشب لإضافة نقطة · اسحب ● لتعديل المسار · انقر على ● لحذفها · النقطة البيضاء تنقل الوجهة", hintPathNeed: "أضف خطوة أخرى أولاً",
   webglTitle: "تعذّر تشغيل الملعب ثلاثي الأبعاد", webglHint: "قد يكون WebGL معطّلاً. بياناتك بأمان.",
   retry: "حاول مجدداً", players: "لاعبين", steps: "خطوات", ball: "الكرة", delete: "حذف",
-  move: "حركة سريعة", hintMove: "اسحب لاعباً إلى وجهته — تُنشأ الخطوة التالية تلقائياً",
 }
 
 export const EDITOR_STRINGS: Record<string, Partial<Dict>> = { en, he, es, pt, de, it, ru, ar }

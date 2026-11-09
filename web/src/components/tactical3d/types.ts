@@ -2,7 +2,7 @@ import type { MutableRefObject } from "react"
 import type { Player, Arrow, MovementPath } from "@/types"
 import type { Vec2 } from "@/utils/geometry"
 
-export type Tool = "drag" | "move" | "arrow" | "path"
+export type Tool = "drag" | "arrow" | "path"
 
 export type CameraPreset = "broadcast" | "tactical" | "top" | "top90" | "top180" | "top270" | "end" | "ball"
 

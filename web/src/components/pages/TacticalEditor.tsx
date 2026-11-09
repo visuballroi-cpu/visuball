@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import {
   RotateCw, ArrowLeft, Save, Undo2, Redo2, Sparkles, Brain, Play, Pause, SkipBack, SkipForward, Repeat,
-  MousePointer2, MoveUpRight, Route, Footprints, Plus, Copy, Trash2, X, Eye, RotateCcw, Users, Video, Layers, Wand2,
+  MousePointer2, MoveUpRight, Route, Plus, Copy, Trash2, X, Eye, RotateCcw, Users, Video, Layers, Wand2,
 } from "lucide-react"
 import { useCoachStore, useExerciseStore } from "@/store"
 import { generateId, getCurrentDate } from "@/utils"
@@ -14,7 +14,7 @@ import PitchScene from "@/components/tactical3d/PitchScene"
 import {
   NO_OVERLAYS, type CameraPreset, type Overlays, type PlaybackBus, type Tool,
 } from "@/components/tactical3d/types"
-import { bezierMid, bezierPt, clamp, cpFromMid, damp, defaultCp, easeInOut, type Vec2 } from "@/utils/geometry"
+import { bezierMid, bezierPt, clamp, damp, defaultCp, easeInOut, nearestSegment, routeKey, routePoint, type Vec2 } from "@/utils/geometry"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,9 +43,10 @@ type Hit =
   | { kind: "ball"; pos: Vec2 }
   | { kind: "arrowcp"; id: string; pos: Vec2 }
   | { kind: "pathcp"; id: string; pos: Vec2 }
-  | { kind: "ballpath"; pos: Vec2 }
+  | { kind: "waypoint"; id: string; index: number; pos: Vec2 }
+  | { kind: "dest"; id: string; pos: Vec2 }
 
-interface Drag { hit: Hit; dx: number; dy: number; moved: boolean; mode?: "move" }
+interface Drag { hit: Hit; dx: number; dy: number; moved: boolean }
 
 interface TacticalEditorProps {
   newDrillContext?: { date: string; type: "SESSION" | "DRILL" } | null
@@ -81,6 +82,17 @@ function awaySquad(): Player[] {
 const centre = (): Vec2 => ({ x: PITCH_WIDTH / 2, y: PITCH_HEIGHT / 2 })
 const clampPt = (p: Vec2): Vec2 => ({ x: clamp(p.x, 0, PITCH_WIDTH), y: clamp(p.y, 0, PITCH_HEIGHT) })
 const dist = (a: Vec2, b: Vec2) => Math.hypot(a.x - b.x, a.y - b.y)
+const BALL = "__ball__"
+const getPath = (s: EditorStep, id: string): MovementPath | undefined => (id === BALL ? s.ballMovementPath : s.movementPaths?.[id])
+const withPath = (s: EditorStep, id: string, mp: MovementPath): EditorStep =>
+  id === BALL ? { ...s, ballMovementPath: mp } : { ...s, movementPaths: { ...(s.movementPaths ?? {}), [id]: mp } }
+/** start/end of a run between step `a` and step `b` for a player id (or the ball). */
+function anchorsOf(a: EditorStep, b: EditorStep, id: string): { from: Vec2; to: Vec2 } | null {
+  if (id === BALL) return { from: a.ballPosition, to: b.ballPosition }
+  const f = a.players.find((p) => p.id === id)?.position
+  const t = b.players.find((p) => p.id === id)?.position
+  return f && t ? { from: f, to: t } : null
+}
 
 function freshStep(name: string, formation: string): EditorStep {
   return { id: generateId(), name, players: homeSquad(formation), ballPosition: centre(), arrows: [] }
@@ -136,15 +148,20 @@ function writePose(steps: EditorStep[], head: number, bus: PlaybackBus) {
 
   for (const p of a.players) {
     const to = b.players.find((q) => q.id === p.id)?.position ?? p.position
-    const mp = a.movementPaths?.[p.id] ?? defaultCp(p.position.x, p.position.y, to.x, to.y)
-    const pt = bezierPt(p.position.x, p.position.y, mp.cpX, mp.cpY, to.x, to.y, f)
+    const saved = a.movementPaths?.[p.id]
+    const mp = saved ?? defaultCp(p.position.x, p.position.y, to.x, to.y)
+    const pt = saved?.pts?.length
+      ? routePoint(routeKey(p.id, p.position, saved.pts, to), p.position, saved.pts, to, f)
+      : bezierPt(p.position.x, p.position.y, mp.cpX, mp.cpY, to.x, to.y, f)
     let v = bus.players.get(p.id)
     if (!v) { v = { x: pt.x, y: pt.y }; bus.players.set(p.id, v) }
     v.x = pt.x; v.y = pt.y
   }
   const fb = a.ballPosition, tb = b.ballPosition
   const bp = a.ballMovementPath ?? defaultCp(fb.x, fb.y, tb.x, tb.y)
-  const bpt = bezierPt(fb.x, fb.y, bp.cpX, bp.cpY, tb.x, tb.y, f)
+  const bpt = a.ballMovementPath?.pts?.length
+    ? routePoint(routeKey(BALL, fb, a.ballMovementPath.pts, tb), fb, a.ballMovementPath.pts, tb, f)
+    : bezierPt(fb.x, fb.y, bp.cpX, bp.cpY, tb.x, tb.y, f)
   bus.ball.x = bpt.x; bus.ball.y = bpt.y
 }
 
@@ -315,7 +332,8 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     accRef.current += dt
     const ri = Math.round(head)
     const idxChanged = ri !== idxRef.current
-    if (idxChanged || (accRef.current > 0.05 && Math.abs(head - uiHeadRef.current) > 1e-3)) {
+    const settled = Number.isInteger(head) && uiHeadRef.current !== head // always publish the exact resting value
+    if (settled || idxChanged || (accRef.current > 0.05 && Math.abs(head - uiHeadRef.current) > 1e-3)) {
       accRef.current = 0
       uiHeadRef.current = head
       setHeadUi(head)
@@ -411,19 +429,17 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     }
     if (toolRef.current === "path" && nx) {
       const sel = pathSelRef.current
-      if (sel) {
-        const from = s.players.find((q) => q.id === sel)?.position
-        const to = nx.players.find((q) => q.id === sel)?.position
-        if (from && to) {
-          const cp = s.movementPaths?.[sel] ?? defaultCp(from.x, from.y, to.x, to.y)
-          const mid = bezierMid(from.x, from.y, cp.cpX, cp.cpY, to.x, to.y)
+      const an = sel ? anchorsOf(s, nx, sel) : null
+      if (sel && an) {
+        if (dist(p, an.to) < 1.9) return { kind: "dest", id: sel, pos: an.to }
+        const mp = getPath(s, sel)
+        if (mp?.pts?.length) {
+          for (let k = 0; k < mp.pts.length; k++) if (dist(p, mp.pts[k]) < 1.9) return { kind: "waypoint", id: sel, index: k, pos: mp.pts[k] }
+        } else {
+          const cp = mp ?? defaultCp(an.from.x, an.from.y, an.to.x, an.to.y)
+          const mid = bezierMid(an.from.x, an.from.y, cp.cpX, cp.cpY, an.to.x, an.to.y)
           if (dist(p, mid) < 1.9) return { kind: "pathcp", id: sel, pos: mid }
         }
-      }
-      if (dist(s.ballPosition, nx.ballPosition) > 0.5) {
-        const bcp = s.ballMovementPath ?? defaultCp(s.ballPosition.x, s.ballPosition.y, nx.ballPosition.x, nx.ballPosition.y)
-        const mid = bezierMid(s.ballPosition.x, s.ballPosition.y, bcp.cpX, bcp.cpY, nx.ballPosition.x, nx.ballPosition.y)
-        if (dist(p, mid) < 1.9) return { kind: "ballpath", pos: mid }
       }
     }
     let best: Hit | null = null
@@ -443,22 +459,6 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     const i = idxRef.current
     const target = clampPt({ x: pt.x - d.dx, y: pt.y - d.dy })
     const h = d.hit
-    if (d.mode === "move") {
-      // FIFA-Manager style: the dragged ghost is the NEXT step's position; the next step is created on demand.
-      let st = stepsRef.current
-      if (i >= st.length - 1) {
-        const base = st[i]
-        const ns: EditorStep = {
-          ...base, id: generateId(), name: `${L("step")} ${st.length + 1}`, players: base.players.map((p) => ({ ...p, position: { ...p.position } })),
-          ballPosition: { ...base.ballPosition }, arrows: [], movementPaths: undefined, ballMovementPath: undefined,
-        }
-        st = [...st, ns]
-        setSteps(st)
-      }
-      if (h.kind === "player") patchStep(i + 1, (s) => ({ ...s, players: s.players.map((q) => (q.id === h.id ? { ...q, position: target } : q)) }), false)
-      else if (h.kind === "ball") patchStep(i + 1, (s) => ({ ...s, ballPosition: target }), false)
-      return
-    }
     if (h.kind === "player") {
       patchStep(i, (s) => ({ ...s, players: s.players.map((q) => (q.id === h.id ? { ...q, position: target } : q)) }), false)
     } else if (h.kind === "ball") {
@@ -466,33 +466,41 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     } else if (h.kind === "arrowcp") {
       patchStep(i, (s) => ({ ...s, arrows: s.arrows.map((a) => (a.id === h.id ? { ...a, cpX: target.x, cpY: target.y } : a)) }), false)
     } else if (h.kind === "pathcp") {
+      // dragging the mid handle of a plain curve turns it into the first waypoint
       const st = stepsRef.current
-      const from = st[i].players.find((q) => q.id === h.id)?.position
-      const to = st[i + 1]?.players.find((q) => q.id === h.id)?.position
-      if (!from || !to) return
-      const cp = cpFromMid(from.x, from.y, target.x, target.y, to.x, to.y)
-      patchStep(i, (s) => ({ ...s, movementPaths: { ...(s.movementPaths ?? {}), [h.id]: cp } }), false)
-    } else if (h.kind === "ballpath") {
+      const mp = getPath(st[i], h.id) ?? { cpX: 0, cpY: 0 }
+      patchStep(i, (s) => withPath(s, h.id, { ...mp, pts: [target] }), false)
+      d.hit = { kind: "waypoint", id: h.id, index: 0, pos: target }
+    } else if (h.kind === "waypoint") {
       const st = stepsRef.current
-      const from = st[i].ballPosition
-      const to = st[i + 1]?.ballPosition
-      if (!to) return
-      const cp = cpFromMid(from.x, from.y, target.x, target.y, to.x, to.y)
-      patchStep(i, (s) => ({ ...s, ballMovementPath: cp }), false)
+      const mp = getPath(st[i], h.id)
+      if (!mp?.pts) return
+      patchStep(i, (s) => withPath(s, h.id, { ...mp, pts: mp.pts!.map((q, n) => (n === h.index ? target : q)) }), false)
+    } else if (h.kind === "dest") {
+      if (h.id === BALL) patchStep(i + 1, (s) => ({ ...s, ballPosition: target }), false)
+      else patchStep(i + 1, (s) => ({ ...s, players: s.players.map((q) => (q.id === h.id ? { ...q, position: target } : q)) }), false)
     }
-  }, [patchStep, L])
+  }, [patchStep])
 
   const endDrag = useRef<() => void>(() => {})
+
+  const removeWaypoint = (id: string, index: number) => {
+    const i = idxRef.current
+    const mp = getPath(stepsRef.current[i], id)
+    if (!mp?.pts) return
+    const pts = mp.pts.filter((_, k) => k !== index)
+    patchStep(i, (s0) => withPath(s0, id, { ...mp, pts: pts.length ? pts : undefined }), true)
+  }
 
   const onPitchDown = useCallback((x: number, y: number, button: number) => {
     if (lockedRef.current || button !== 0) return
     const t = toolRef.current
     const hit = findHit(x, y)
     const i = idxRef.current
-    const startDrag = (h: Hit, mode?: "move") => {
+    const startDrag = (h: Hit) => {
       // snapshot BEFORE the first change so a single undo reverts the whole gesture
       pushHistory()
-      dragRef.current = { hit: h, dx: mode ? 0 : x - h.pos.x, dy: mode ? 0 : y - h.pos.y, moved: false, mode }
+      dragRef.current = { hit: h, dx: x - h.pos.x, dy: y - h.pos.y, moved: false }
       const move = (e: PointerEvent) => {
         const d = dragRef.current
         const pt = pickRef.current?.(e.clientX, e.clientY)
@@ -510,7 +518,10 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
         window.removeEventListener("pointercancel", up)
         const d = dragRef.current
         dragRef.current = null
-        if (d && !d.moved) history.current.undo.pop() // plain click → nothing to undo
+        if (d && !d.moved) {
+          history.current.undo.pop() // plain click → nothing to undo
+          if (d.hit.kind === "waypoint") removeWaypoint(d.hit.id, d.hit.index) // click a waypoint = delete it
+        }
         endDrag.current = () => {}
       }
     }
@@ -520,15 +531,6 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
         setSelectedPlayerId(hit.kind === "player" ? hit.id : null)
         startDrag(hit)
       } else setSelectedPlayerId(null)
-      return
-    }
-
-    if (t === "move") {
-      if (hit && (hit.kind === "player" || hit.kind === "ball")) {
-        setPathSelectedId(hit.kind === "player" ? hit.id : null)
-        setSelectedPlayerId(hit.kind === "player" ? hit.id : null)
-        startDrag(hit, "move")
-      }
       return
     }
 
@@ -550,10 +552,23 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
       return
     }
 
-    // path tool
-    if (hit?.kind === "pathcp" || hit?.kind === "ballpath") { startDrag(hit); return }
-    if (hit?.kind === "player") setPathSelectedId(hit.id)
-    else setPathSelectedId(null)
+    // path tool: pick a runner, then shape the route
+    if (hit && (hit.kind === "pathcp" || hit.kind === "waypoint" || hit.kind === "dest")) { startDrag(hit); return }
+    if (hit?.kind === "player") { setPathSelectedId(hit.id); return }
+    if (hit?.kind === "ball") { setPathSelectedId(BALL); return }
+    const sel = pathSelRef.current
+    const st = stepsRef.current
+    const an = sel && i < st.length - 1 ? anchorsOf(st[i], st[i + 1], sel) : null
+    if (sel && an) {
+      // click on empty grass = add a waypoint on the nearest part of the route
+      const pt = clampPt({ x, y })
+      const pts = getPath(st[i], sel)?.pts ?? []
+      const at = nearestSegment(an.from, pts, an.to, pt)
+      const mp = getPath(st[i], sel) ?? { cpX: 0, cpY: 0 }
+      const nextPts = [...pts.slice(0, at), pt, ...pts.slice(at)]
+      patchStep(i, (s0) => withPath(s0, sel, { ...mp, pts: nextPts }), true)
+    } else setPathSelectedId(null)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [findHit, pushHistory, applyDragMove, patchStep])
 
   useEffect(() => () => endDrag.current(), [])
@@ -737,9 +752,8 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
       if (e.key === "Escape") { setArrowStart(null); setPathSelectedId(null); setSelectedPlayerId(null); return }
       if (!mod && e.key.toLowerCase() === "v") toggleViewRef.current()
       if (!mod && e.key === "1") chooseTool("drag")
-      if (!mod && e.key === "2") chooseTool("move")
-      if (!mod && e.key === "3") chooseTool("arrow")
-      if (!mod && e.key === "4") chooseTool("path")
+      if (!mod && e.key === "2") chooseTool("arrow")
+      if (!mod && e.key === "3") chooseTool("path")
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
@@ -748,7 +762,6 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
   // ── Derived view data ──────────────────────────────────────────────────────
   const hint =
     locked ? L("frozen")
-    : tool === "move" ? L("hintMove")
     : tool === "drag" ? (flat ? "" : L("hintDrag"))
     : tool === "arrow" ? (arrowStart ? L("hintArrow2") : L("hintArrow1"))
     : !next ? L("hintPathNeed")
@@ -851,11 +864,8 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
         <Section c={c} icon={<MousePointer2 size={12} />} title={L("tools")}>
           <div style={{ display: "flex", gap: 4 }}>
             <IconBtn c={c} active={tool === "drag"} onClick={() => chooseTool("drag")} wide title={`${L("select")} (1)`}><MousePointer2 size={15} />{L("select")}</IconBtn>
-            <IconBtn c={c} active={tool === "arrow"} onClick={() => chooseTool("arrow")} wide title={`${L("arrow")} (3)`}><MoveUpRight size={15} /></IconBtn>
-            <IconBtn c={c} active={tool === "path"} onClick={() => chooseTool("path")} wide title={`${L("path")} (4)`}><Route size={15} /></IconBtn>
-          </div>
-          <div style={{ marginTop: 4 }}>
-            <IconBtn c={c} wide active={tool === "move"} onClick={() => chooseTool("move")} title={`${L("move")} (2)`}><Footprints size={15} /><span style={{ flex: 1, textAlign: "start" }}>{L("move")}</span></IconBtn>
+            <IconBtn c={c} active={tool === "arrow"} onClick={() => chooseTool("arrow")} wide title={`${L("arrow")} (2)`}><MoveUpRight size={15} /></IconBtn>
+            <IconBtn c={c} active={tool === "path"} onClick={() => chooseTool("path")} wide title={`${L("path")} (3)`}><Route size={15} /></IconBtn>
           </div>
           {tool === "arrow" && (
             <div style={{ display: "flex", gap: 7, marginTop: 10 }}>

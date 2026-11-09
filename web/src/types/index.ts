@@ -27,6 +27,8 @@ export interface Area {
 export interface MovementPath {
   cpX: number
   cpY: number
+  /** Optional waypoints: when present the run follows a smooth spline through them (cpX/cpY are ignored). */
+  pts?: Array<{ x: number; y: number }>
 }
 
 export interface Arrow {

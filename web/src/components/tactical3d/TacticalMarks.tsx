@@ -4,7 +4,7 @@ import { Html, Line } from "@react-three/drei"
 import type { ThreeEvent } from "@react-three/fiber"
 import type { Arrow, Player } from "@/types"
 import {
-  HALF_W, HALF_H, LAYER, bezierMid, defaultCp, sampleBezier, type Vec2,
+  HALF_W, HALF_H, LAYER, bezierMid, defaultCp, sampleBezier, sampleRoute, type Vec2,
 } from "@/utils/geometry"
 import type { SceneStep, Tool } from "./types"
 
@@ -13,20 +13,23 @@ const w = (x: number, y: number, h: number = LAYER.path): V3 => [x - HALF_W, h, 
 
 interface CurveProps {
   fx: number; fy: number; cpX: number; cpY: number; tx: number; ty: number
-  color: string; width?: number; opacity?: number; dashed?: boolean; head?: number
+  color: string; width?: number; opacity?: number; dashed?: boolean; head?: number; poly?: Vec2[]
 }
 
 /** Dashed bezier ribbon with a flat triangular arrow-head lying on the grass. */
-function Curve({ fx, fy, cpX, cpY, tx, ty, color, width = 3.2, opacity = 0.95, dashed = true, head = 2.1 }: CurveProps) {
+function Curve({ fx, fy, cpX, cpY, tx, ty, color, width = 3.2, opacity = 0.95, dashed = true, head = 2.1, poly }: CurveProps) {
   const { pts, tri } = useMemo(() => {
-    let dx = tx - cpX
-    let dy = ty - cpY
+    const pl = poly && poly.length > 2 ? poly : null
+    let dx = pl ? tx - pl[Math.max(pl.length - 4, 0)].x : tx - cpX
+    let dy = pl ? ty - pl[Math.max(pl.length - 4, 0)].y : ty - cpY
     let len = Math.hypot(dx, dy)
     if (len < 1e-4) { dx = tx - fx; dy = ty - fy; len = Math.hypot(dx, dy) || 1 }
     dx /= len; dy /= len
     const bx = tx - dx * head
     const by = ty - dy * head
-    const line = sampleBezier(fx, fy, cpX, cpY, bx, by, 30).map((p) => w(p.x, p.y))
+    const line = pl
+      ? [...pl.filter((p) => Math.hypot(p.x - tx, p.y - ty) > head), { x: bx, y: by }].map((p) => w(p.x, p.y))
+      : sampleBezier(fx, fy, cpX, cpY, bx, by, 30).map((p) => w(p.x, p.y))
     const nx = -dy * head * 0.55
     const ny = dx * head * 0.55
     const geo = new THREE.BufferGeometry().setFromPoints([
@@ -36,7 +39,7 @@ function Curve({ fx, fy, cpX, cpY, tx, ty, color, width = 3.2, opacity = 0.95, d
     ])
     geo.computeVertexNormals()
     return { pts: line, tri: geo }
-  }, [fx, fy, cpX, cpY, tx, ty, head])
+  }, [fx, fy, cpX, cpY, tx, ty, head, poly])
 
   return (
     <group renderOrder={5}>
@@ -168,19 +171,23 @@ export default function TacticalMarks({
       )}
 
       {/* ── movement paths (path tool): current → next step ── */}
-      {(tool === "path" || tool === "move") && showPaths && currentStep && nextStep && !locked && (() => {
+      {tool === "path" && showPaths && currentStep && nextStep && !locked && (() => {
+        const BALL = "__ball__"
         const items = currentStep.players.map((p) => {
           const to = nextStep.players.find((q) => q.id === p.id)
           if (!to) return null
           const moved = Math.hypot(to.position.x - p.position.x, to.position.y - p.position.y) > 0.4
-          return moved ? { p, to } : null
+          return moved || p.id === pathSelectedId ? { p, to } : null
         }).filter(Boolean) as { p: Player; to: Player }[]
 
         const fb = currentStep.ballPosition
         const tb = nextStep.ballPosition
-        const ballMoved = Math.hypot(tb.x - fb.x, tb.y - fb.y) > 0.5
-        const bcp = currentStep.ballMovementPath ?? defaultCp(fb.x, fb.y, tb.x, tb.y)
+        const ballMoved = Math.hypot(tb.x - fb.x, tb.y - fb.y) > 0.5 || pathSelectedId === BALL
+        const bmp = currentStep.ballMovementPath
+        const bpts = bmp?.pts ?? []
+        const bcp = bmp ?? defaultCp(fb.x, fb.y, tb.x, tb.y)
         const bmid = bezierMid(fb.x, fb.y, bcp.cpX, bcp.cpY, tb.x, tb.y)
+        const bsel = pathSelectedId === BALL
 
         return (
           <group>
@@ -189,27 +196,45 @@ export default function TacticalMarks({
               const col = home ? "#60a5fa" : "#f87171"
               const sel = p.id === pathSelectedId
               const mp = currentStep.movementPaths?.[p.id]
+              const pts = mp?.pts ?? []
               const def = defaultCp(p.position.x, p.position.y, to.position.x, to.position.y)
               const cpX = mp?.cpX ?? def.cpX
               const cpY = mp?.cpY ?? def.cpY
               const mid = bezierMid(p.position.x, p.position.y, cpX, cpY, to.position.x, to.position.y)
+              const poly = pts.length ? sampleRoute(p.position, pts, to.position) : undefined
               return (
                 <group key={p.id}>
                   <Ghost p={to} color={col} selected={sel} />
                   <Curve
                     fx={p.position.x} fy={p.position.y} cpX={cpX} cpY={cpY} tx={to.position.x} ty={to.position.y}
-                    color={col} opacity={sel ? 0.95 : 0.28} width={sel ? 3.6 : 1.8} head={sel ? 2.3 : 1.4}
+                    color={col} opacity={sel ? 0.95 : 0.28} width={sel ? 3.6 : 1.8} head={sel ? 2.3 : 1.4} poly={poly}
                   />
                   {sel && (
-                    <Handle x={mid.x} y={mid.y} color={col} r={1.0} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />
+                    <>
+                      <Handle x={to.position.x} y={to.position.y} color="#ffffff" r={0.9} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />
+                      {pts.length
+                        ? pts.map((q, k) => <Handle key={k} x={q.x} y={q.y} color={col} r={1.0} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />)
+                        : <Handle x={mid.x} y={mid.y} color={col} r={1.0} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />}
+                    </>
                   )}
                 </group>
               )
             })}
             {ballMoved && (
               <group>
-                <Curve fx={fb.x} fy={fb.y} cpX={bcp.cpX} cpY={bcp.cpY} tx={tb.x} ty={tb.y} color="#ffe566" opacity={0.85} width={3} />
-                <Handle x={bmid.x} y={bmid.y} color="#ffe566" r={0.95} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />
+                <Curve
+                  fx={fb.x} fy={fb.y} cpX={bcp.cpX} cpY={bcp.cpY} tx={tb.x} ty={tb.y} color="#ffe566"
+                  opacity={bsel ? 0.95 : 0.6} width={bsel ? 3.6 : 3}
+                  poly={bpts.length ? sampleRoute(fb, bpts, tb) : undefined}
+                />
+                {bsel && (
+                  <>
+                    <Handle x={tb.x} y={tb.y} color="#ffffff" r={0.9} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />
+                    {bpts.length
+                      ? bpts.map((q, k) => <Handle key={k} x={q.x} y={q.y} color="#ffe566" r={0.95} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />)
+                      : <Handle x={bmid.x} y={bmid.y} color="#ffe566" r={0.95} onDown={onPitchDown} onOver={onHandleOver} onOut={onHandleOut} />}
+                  </>
+                )}
               </group>
             )}
           </group>
