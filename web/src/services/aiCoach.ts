@@ -1,6 +1,7 @@
 // ─── AI Coach — Claude (primary) + Gemini (fallback) + Pollinations (last resort) ──
 import Anthropic from "@anthropic-ai/sdk"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { generateLocalDrill } from "./localDrill"
 
 export interface AIPlayer { number: number; x: number; y: number }
 export interface AIArrow  { fromX: number; fromY: number; toX: number; toY: number; color: string }
@@ -21,6 +22,7 @@ export interface AIDrillResult {
   objective: string            // single tactical/technical objective
   coachingPoints: string[]     // 2-5 key teaching points for the whole drill
   steps: AIStep[]
+  source?: "ai" | "local"
 }
 
 // ─── System prompt ─────────────────────────────────────────────────────────────
@@ -190,7 +192,7 @@ async function callClaude(userRequest: string, apiKey: string, onChunk: (s: stri
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
   onChunk("Connecting to Claude...")
   const msg = await client.messages.create({
-    model: "claude-opus-4-6",
+    model: "claude-sonnet-4-5",
     max_tokens: 8192,
     system: SYSTEM,
     messages: [{ role: "user", content: `Coach request: "${userRequest}"\n\nJSON:` }],
@@ -252,21 +254,26 @@ export async function generateDrill(
   const hasAnthropic = anthropicKey && anthropicKey !== "your_anthropic_api_key_here"
   const hasGemini    = geminiKey && geminiKey !== "your_gemini_api_key_here"
 
-  let raw: string
+  const attempts: Array<() => Promise<string>> = []
+  if (hasAnthropic) attempts.push(() => callClaude(userRequest, anthropicKey, cb))
+  if (hasGemini)    attempts.push(() => callGemini(userRequest, geminiKey, cb))
+  attempts.push(() => callPollinations(userRequest, cb))
 
-  if (hasAnthropic) {
-    raw = await callClaude(userRequest, anthropicKey, cb)
-  } else if (hasGemini) {
-    raw = await callGemini(userRequest, geminiKey, cb)
-  } else {
-    raw = await callPollinations(userRequest, cb)
+  for (const run of attempts) {
+    try {
+      const drill = parseResult(await run())
+      drill.source = "ai"
+      return drill
+    } catch (e) {
+      console.warn("[AI drill] provider failed:", e)
+    }
   }
 
-  try {
-    return parseResult(raw)
-  } catch (e: any) {
-    throw new Error(e?.message ?? "AI returned an unexpected format. Please rephrase your request.")
-  }
+  // Everything failed (no key / offline / bad JSON) → build a drill locally so it always works.
+  cb("Building drill offline...")
+  const local = generateLocalDrill(userRequest)
+  local.source = "local"
+  return local
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -332,7 +339,7 @@ async function analysisViaProviders(s: BoardSnapshot): Promise<string> {
   if (anthropicKey && anthropicKey !== "your_anthropic_api_key_here") {
     const client = new Anthropic({ apiKey: anthropicKey, dangerouslyAllowBrowser: true })
     const msg = await client.messages.create({
-      model: "claude-opus-4-6", max_tokens: 1024, system: ANALYSIS_SYSTEM,
+      model: "claude-sonnet-4-5", max_tokens: 1024, system: ANALYSIS_SYSTEM,
       messages: [{ role: "user", content: user }],
     })
     const block = msg.content[0]
