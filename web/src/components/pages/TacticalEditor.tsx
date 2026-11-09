@@ -168,15 +168,15 @@ function writePose(steps: EditorStep[], head: number, bus: PlaybackBus) {
 // ─── Small UI atoms ───────────────────────────────────────────────────────────
 
 interface Palette {
-  glass: string; border: string; text: string; sub: string; accent: string; accent2: string; hover: string; field: string
+  glass: string; glassSolid: string; border: string; text: string; sub: string; accent: string; accent2: string; hover: string; field: string
 }
 
 const DARK: Palette = {
-  glass: "rgba(11,17,31,.74)", border: "rgba(255,255,255,.09)", text: "#e8ecf4", sub: "#8b97ad",
+  glass: "rgba(11,17,31,.74)", glassSolid: "rgba(11,17,31,.93)", border: "rgba(255,255,255,.09)", text: "#e8ecf4", sub: "#8b97ad",
   accent: "#22d3ee", accent2: "#a78bfa", hover: "rgba(255,255,255,.08)", field: "rgba(255,255,255,.06)",
 }
 const LIGHT: Palette = {
-  glass: "rgba(255,255,255,.8)", border: "rgba(15,23,42,.1)", text: "#0f172a", sub: "#5b6578",
+  glass: "rgba(255,255,255,.8)", glassSolid: "rgba(255,255,255,.95)", border: "rgba(15,23,42,.1)", text: "#0f172a", sub: "#5b6578",
   accent: "#0891b2", accent2: "#7c3aed", hover: "rgba(15,23,42,.07)", field: "rgba(15,23,42,.05)",
 }
 
@@ -258,9 +258,19 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
   const rtl = lang === "he" || lang === "ar"
   const c = profile.theme === "light" ? LIGHT : DARK
 
+  const [quality, setQualityState] = useState<"auto" | "high" | "low">(() => {
+    try { const v = localStorage.getItem("visuball_quality"); return v === "high" || v === "low" ? v : "auto" } catch { return "auto" }
+  })
+  const setQuality = (v: "auto" | "high" | "low") => {
+    setQualityState(v)
+    try { localStorage.setItem("visuball_quality", v) } catch { /* private mode */ }
+  }
+
   const glass: CSSProperties = {
-    background: c.glass, border: `1px solid ${c.border}`, backdropFilter: "blur(18px) saturate(1.4)",
-    WebkitBackdropFilter: "blur(18px) saturate(1.4)", borderRadius: 16, boxShadow: "0 12px 40px rgba(0,0,0,.28)",
+    // backdrop-filter over a live WebGL canvas re-blurs every frame — only allowed in "High" quality
+    background: quality === "high" ? c.glass : c.glassSolid, border: `1px solid ${c.border}`,
+    ...(quality === "high" ? { backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" } : {}),
+    borderRadius: 16, boxShadow: quality === "high" ? "0 12px 40px rgba(0,0,0,.28)" : "0 4px 14px rgba(0,0,0,.25)",
     color: c.text,
   }
 
@@ -385,13 +395,7 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
   const [cameraNonce, setCameraNonce] = useState(0)
   const [flat, setFlat] = useState(false)
   const [spin, setSpin] = useState(0)
-  const [quality, setQualityState] = useState<"auto" | "high" | "low">(() => {
-    try { const v = localStorage.getItem("visuball_quality"); return v === "high" || v === "low" ? v : "auto" } catch { return "auto" }
-  })
-  const setQuality = (v: "auto" | "high" | "low") => {
-    setQualityState(v)
-    try { localStorage.setItem("visuball_quality", v) } catch { /* private mode */ }
-  }
+
   const pickRef = useRef<((cx: number, cy: number) => Vec2 | null) | null>(null)
   const dragRef = useRef<Drag | null>(null)
   const toolRef = useRef(tool)

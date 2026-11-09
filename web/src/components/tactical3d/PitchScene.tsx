@@ -1,7 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber"
-import { OrbitControls, AdaptiveDpr, AdaptiveEvents, PerformanceMonitor } from "@react-three/drei"
+import { OrbitControls, PerformanceMonitor } from "@react-three/drei"
 import { HALF_W, HALF_H, clamp, damp, easeInOut } from "@/utils/geometry"
 import type { CameraPreset, PitchSceneProps } from "./types"
 import Pitch3D from "./Pitch3D"
@@ -202,8 +202,6 @@ function SceneContents(props: PitchSceneProps) {
           flipflops={3} onDecline={() => setAutoShadows(false)} onFallback={() => setAutoShadows(false)} onIncline={() => setAutoShadows(true)}
         />
       )}
-      <AdaptiveDpr pixelated={false} />
-      <AdaptiveEvents />
       <Lights shadows={shadowsOn} />
       <FrameDriver onTick={onTick} />
       <Picker pickRef={pickRef} />
@@ -246,7 +244,6 @@ export default function PitchScene(props: PitchSceneProps & { errorTitle?: strin
     <SceneErrorBoundary title={errorTitle} hint={errorHint} retryLabel={retryLabel}>
       <Canvas
         shadows
-        performance={{ min: 0.45, max: 1, debounce: 150 }}
         dpr={scene.quality === "low" ? [1, 1] : scene.quality === "high" ? [1, 2] : scene.flat ? [1.5, 2] : [1, 1.5]}
         camera={{ fov: 38, near: 0.5, far: 700, position: [0, 40, 64] }}
         gl={{ antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: false }}
