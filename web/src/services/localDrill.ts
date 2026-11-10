@@ -1,9 +1,9 @@
 // Offline drill generator — always works (no API key / network). Keyword-matched templates.
 import type { AIDrillResult, AIStep, AIPlayer, AIArrow } from "./aiCoach"
 
-const P = (number: number, x: number, y: number): AIPlayer => ({ number, x, y })
-const A = (fromX: number, fromY: number, toX: number, toY: number, color = "#facc15"): AIArrow => ({ fromX, fromY, toX, toY, color })
-const S = (name: string, instruction: string, home: AIPlayer[], away: AIPlayer[], ball: [number, number], arrows: AIArrow[] = []): AIStep =>
+export const P = (number: number, x: number, y: number): AIPlayer => ({ number, x, y })
+export const A = (fromX: number, fromY: number, toX: number, toY: number, color = "#facc15"): AIArrow => ({ fromX, fromY, toX, toY, color })
+export const S = (name: string, instruction: string, home: AIPlayer[], away: AIPlayer[], ball: [number, number], arrows: AIArrow[] = []): AIStep =>
   ({ name, instruction, homePlayers: home, awayPlayers: away, ball: { x: ball[0], y: ball[1] }, arrows })
 
 type Tpl = { re: RegExp; build: (req: string) => AIDrillResult }
@@ -118,6 +118,8 @@ const TEMPLATES: Tpl[] = [
   { re: /בעיטה|סיום|גימור|שער|finish|shoot|shot|goal/i, build: finishing },
 ]
 
+export const LEGACY = { rondo, overlap, press, counter, finishing, corner, buildUp }
+
 export function generateLocalDrill(request: string): AIDrillResult {
   const t = TEMPLATES.find((x) => x.re.test(request))
   return (t ? t.build : buildUp)(request)
@@ -137,7 +139,7 @@ export function parseStepCount(req: string): number | null {
   let n: number | undefined = d ? parseInt(d[1], 10) : undefined
   if (n === undefined) {
     const w = req.match(new RegExp(`(\\S+)\\s+${WORD}`, "i"))
-    if (w) n = HE_NUM[w[1].toLowerCase()]
+    if (w) n = HE_NUM[w[1].toLowerCase()] ?? HE_NUM[w[1].replace(/^[בלוכמש]/, "").toLowerCase()]
   }
   return n && n >= 1 && n <= 24 ? n : null
 }

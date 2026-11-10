@@ -1,7 +1,8 @@
 // ─── AI Coach — Claude (primary) + Gemini (fallback) + Pollinations (last resort) ──
 import Anthropic from "@anthropic-ai/sdk"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { generateLocalDrill, parseStepCount, fitSteps } from "./localDrill"
+import { parseStepCount, fitSteps } from "./localDrill"
+import { buildFromLibrary, referenceExamples, polishDrill, searchDrills } from "./drillDB"
 
 export interface AIPlayer { number: number; x: number; y: number }
 export interface AIArrow  { fromX: number; fromY: number; toX: number; toY: number; color: string }
@@ -22,7 +23,7 @@ export interface AIDrillResult {
   objective: string            // single tactical/technical objective
   coachingPoints: string[]     // 2-5 key teaching points for the whole drill
   steps: AIStep[]
-  source?: "ai" | "local"
+  source?: "ai" | "library"
 }
 
 // ─── System prompt ─────────────────────────────────────────────────────────────
@@ -212,33 +213,6 @@ async function callGemini(userRequest: string, apiKey: string, onChunk: (s: stri
   return result.response.text()
 }
 
-// ─── Pollinations fallback (no key needed) ────────────────────────────────────
-
-async function callPollinations(userRequest: string, onChunk: (s: string) => void): Promise<string> {
-  const prompt = (
-    `You are a football tactical coach AI. Return ONLY valid JSON with this exact schema: ` +
-    `{"name":"...","description":"...","phase":"possession","objective":"...","coachingPoints":["cue1","cue2"],"steps":[{"name":"...","instruction":"coaching command","homePlayers":[{"number":1,"x":5,"y":34}],"awayPlayers":[{"number":1,"x":100,"y":34}],"ball":{"x":52.5,"y":34},"arrows":[{"fromX":0,"fromY":0,"toX":10,"toY":10,"color":"#facc15"}]}]}. ` +
-    `Pitch 105x68. Home(blue) left GK x=5. Away(red) right GK x=100. Use as many steps as needed for the drill. ` +
-    `Coach request: "${userRequest}". JSON only:`
-  )
-  const encoded = encodeURIComponent(prompt)
-  const seed = Math.floor(Math.random() * 99999)
-  const endpoints = [
-    `/api/pollinations/${encoded}?seed=${seed}`,
-    `https://text.pollinations.ai/${encoded}?seed=${seed}`,
-  ]
-  for (const url of endpoints) {
-    try {
-      onChunk("Generating drill...")
-      const res = await fetch(url, { signal: AbortSignal.timeout(30000) })
-      if (!res.ok) continue
-      const text = await res.text()
-      if (text && text.length > 10) return text
-    } catch { /* try next */ }
-  }
-  throw new Error("Could not reach any AI service. Check your internet connection.")
-}
-
 // ─── Public entry point ───────────────────────────────────────────────────────
 
 export async function generateDrill(
@@ -255,18 +229,19 @@ export async function generateDrill(
   const hasGemini    = geminiKey && geminiKey !== "your_gemini_api_key_here"
 
   const wanted = parseStepCount(userRequest)
-  const req = wanted
-    ? `${userRequest}\n\nIMPORTANT: the "steps" array MUST contain EXACTLY ${wanted} steps - no more, no fewer. Each step is the next moment in the drill.`
-    : userRequest
+  const refs = referenceExamples(userRequest)
+  const req =
+    `${userRequest}\n\n` +
+    `REFERENCE DRILLS from real coaching practice (adapt the structure, spacing and coaching cues to the request - do not copy blindly):\n${refs}\n\n` +
+    (wanted ? `IMPORTANT: the "steps" array MUST contain EXACTLY ${wanted} steps - no more, no fewer. Each step is the next moment in the drill.\n` : "")
   const finish = (d: AIDrillResult): AIDrillResult => {
     if (wanted && d.steps.length !== wanted) d.steps = fitSteps(d.steps, wanted)
-    return d
+    return polishDrill(d)
   }
 
   const attempts: Array<() => Promise<string>> = []
   if (hasAnthropic) attempts.push(() => callClaude(req, anthropicKey, cb))
   if (hasGemini)    attempts.push(() => callGemini(req, geminiKey, cb))
-  attempts.push(() => callPollinations(req, cb))
 
   for (const run of attempts) {
     try {
@@ -278,11 +253,10 @@ export async function generateDrill(
     }
   }
 
-  // Everything failed (no key / offline / bad JSON) → build a drill locally so it always works.
-  cb("Building drill offline...")
-  const local = generateLocalDrill(userRequest)
-  local.source = "local"
-  return finish(local)
+  // No key / provider failed → build from the drill library (adapted to counts & steps)
+  const top = searchDrills(userRequest)[0]?.entry.name
+  cb(top ? `Library: ${top}` : "Building from drill library...")
+  return finish(buildFromLibrary(userRequest))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -16,14 +16,16 @@ interface AICoachPanelProps {
 }
 
 const SUGGESTIONS = [
-  "4v2 rondo in midfield",
-  "High press with 4-4-2 — pressing trigger on back pass",
-  "Build-up from GK, switch of play into winger 1v1",
-  "3v2 counterattack from halfway line",
+  "6v2 rondo, 8 steps",
+  "3v2 attack overload — 6 steps",
+  "High press trigger drill",
+  "Build-up from the GK against a press",
+  "Switch of play to the free winger",
+  "Third-man combination to break the first line",
+  "Counter-press after losing the ball",
   "Corner kick — near post flick-on",
-  "5v3 possession in final third with overload",
-  "Defensive transition — recover shape after losing ball",
-  "Overlapping full-back combination in wide areas",
+  "Free kick routine with a decoy run",
+  "1v1 duels then finish",
 ]
 
 const PHASE_LABELS: Record<string, { label: string; color: string }> = {
