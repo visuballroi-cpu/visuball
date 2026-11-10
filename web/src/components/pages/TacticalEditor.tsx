@@ -568,19 +568,32 @@ export default function TacticalEditor({ newDrillContext, onClearContext }: Tact
     if (hit?.kind === "player") { setPathSelectedId(hit.id); return }
     if (hit?.kind === "ball") { setPathSelectedId(BALL); return }
     const sel = pathSelRef.current
-    const st = stepsRef.current
-    const an = sel && i < st.length - 1 ? anchorsOf(st[i], st[i + 1], sel) : null
-    if (sel && an) {
+    if (!sel) { setPathSelectedId(null); return }
+    let st = stepsRef.current
+    if (i >= st.length - 1) {
+      // no next step yet → create it so the route has somewhere to go
+      const base = structuredClone(st[i])
+      commit([...st, { ...base, id: generateId(), name: `${L("step")} ${st.length + 1}`, arrows: [], movementPaths: undefined, ballMovementPath: undefined }])
+      st = stepsRef.current
+    }
+    const an = anchorsOf(st[i], st[i + 1], sel)
+    if (!an) { setPathSelectedId(null); return }
+    const pt = clampPt({ x, y })
+    const existing = getPath(st[i], sel)
+    if (dist(an.from, an.to) < 1.5 && !existing?.pts?.length) {
+      // runner hasn't been sent anywhere yet: first click = destination
+      patchStep(i + 1, (s0) => sel === BALL
+        ? { ...s0, ballPosition: pt }
+        : { ...s0, players: s0.players.map((q) => (q.id === sel ? { ...q, position: pt } : q)) }, true)
+    } else {
       // click on empty grass = add a waypoint on the nearest part of the route
-      const pt = clampPt({ x, y })
-      const pts = getPath(st[i], sel)?.pts ?? []
+      const pts = existing?.pts ?? []
       const at = nearestSegment(an.from, pts, an.to, pt)
-      const mp = getPath(st[i], sel) ?? { cpX: 0, cpY: 0 }
-      const nextPts = [...pts.slice(0, at), pt, ...pts.slice(at)]
-      patchStep(i, (s0) => withPath(s0, sel, { ...mp, pts: nextPts }), true)
-    } else setPathSelectedId(null)
+      const mp = existing ?? { cpX: 0, cpY: 0 }
+      patchStep(i, (s0) => withPath(s0, sel, { ...mp, pts: [...pts.slice(0, at), pt, ...pts.slice(at)] }), true)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [findHit, pushHistory, applyDragMove, patchStep])
+  }, [findHit, pushHistory, applyDragMove, patchStep, commit])
 
   useEffect(() => () => endDrag.current(), [])
 
