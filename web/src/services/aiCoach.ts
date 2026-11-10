@@ -2,7 +2,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { parseStepCount, fitSteps } from "./localDrill"
-import { buildFromLibrary, referenceExamples, polishDrill, searchDrills } from "./drillDB"
+import { buildFromLibrary, referenceExamples, polishDrill, searchDrills, GLOSSARY } from "./drillDB"
 
 export interface AIPlayer { number: number; x: number; y: number }
 export interface AIArrow  { fromX: number; fromY: number; toX: number; toY: number; color: string }
@@ -231,7 +231,8 @@ export async function generateDrill(
   const wanted = parseStepCount(userRequest)
   const refs = referenceExamples(userRequest)
   const req =
-    `${userRequest}\n\n` +
+    `${userRequest}\n\n${GLOSSARY}\n` +
+    `Write "name", "description", "objective", "coachingPoints" and every step "name"/"instruction" in the SAME LANGUAGE as the coach request above (Hebrew request → Hebrew text).\n\n` +
     `REFERENCE DRILLS from real coaching practice (adapt the structure, spacing and coaching cues to the request - do not copy blindly):\n${refs}\n\n` +
     (wanted ? `IMPORTANT: the "steps" array MUST contain EXACTLY ${wanted} steps - no more, no fewer. Each step is the next moment in the drill.\n` : "")
   const finish = (d: AIDrillResult): AIDrillResult => {

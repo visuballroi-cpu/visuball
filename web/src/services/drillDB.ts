@@ -12,6 +12,7 @@ export interface DrillEntry {
   ages: string            // e.g. "U10–Senior"
   players: string         // typical numbers, shown to the coach
   keywords: RegExp        // he + en
+  concepts?: string[]     // matched against everyday-language concepts
   build: (o: DrillOpts, req: string) => AIDrillResult
 }
 
@@ -183,22 +184,22 @@ const diamondPassing = (): AIDrillResult => ({
 })
 
 export const DRILLS: DrillEntry[] = [
-  { id: "rondo", name: "Rondo (n v m)", phase: "possession", ages: "U8–Senior", players: "4v1 – 8v3", keywords: /רונדו|שמירת כדור|שמירה על הכדור|פוזשן|rondo|keep.?ball|possession|piggy/i, build: (o) => rondo(o) },
-  { id: "overload", name: "Attacking overload (n v m)", phase: "attacking", ages: "U10–Senior", players: "2v1 – 5v3", keywords: /עדיפות|תוספת|מספרית|overload|numerical/i, build: (o) => overload(o) },
-  { id: "overlap", name: "Wing Overlap & Cross", phase: "attacking", ages: "U12–Senior", players: "5v3", keywords: /כנף|אוברלאפ|הגבהה|crossing|cross|overlap|wing/i, build: () => LEGACY.overlap() },
-  { id: "switch", name: "Switch of Play", phase: "attacking", ages: "U14–Senior", players: "7v5", keywords: /החלפת צד|הפצה|החלפה|switch|change of (?:side|play)|long ball/i, build: () => switchPlay() },
-  { id: "thirdman", name: "Third-Man Combination", phase: "attacking", ages: "U14–Senior", players: "4v3", keywords: /איש שלישי|שלישי|שילוב|קומבינציה|third.?man|combination|one.?two|wall.?pass/i, build: () => thirdMan() },
-  { id: "1v1", name: "1v1 Duels", phase: "attacking", ages: "U8–Senior", players: "1v1", keywords: /1\s*(?:v|על)\s*1|אחד על אחד|דו קרב|דריבל|1v1|one.?v.?one|dribbl/i, build: () => oneVOne() },
-  { id: "finishing", name: "Finishing Combination", phase: "attacking", ages: "U10–Senior", players: "3 + GK", keywords: /בעיטה|סיום|גימור|שער|finish|shoot|shot|goal/i, build: () => LEGACY.finishing() },
-  { id: "pressing", name: "Pressing Trigger Drill", phase: "defending", ages: "U14–Senior", players: "8v6", keywords: /לחץ|פרסינג|לחיצה|press|trigger/i, build: () => LEGACY.press() },
-  { id: "lowblock", name: "Low-Block Shifting", phase: "defending", ages: "U14–Senior", players: "11v5", keywords: /הגנה|בלוק|הגנה נמוכה|שמירת צורה|defen|low.?block|shape|shift/i, build: () => lowBlock() },
-  { id: "counter", name: "3v2 Counter Attack", phase: "transition_attack", ages: "U12–Senior", players: "3v2", keywords: /מתפרצת|מעבר|התקפה מהירה|counter|transition|break/i, build: () => LEGACY.counter() },
-  { id: "counterpress", name: "Counter-Press (6s)", phase: "transition_defend", ages: "U14–Senior", players: "6v4", keywords: /לחץ נגדי|אחרי איבוד|איבוד כדור|counter.?press|gegenpress|losing the ball|regain|recover/i, build: () => counterPress() },
-  { id: "corner", name: "Corner Kick Routine", phase: "set_piece", ages: "U12–Senior", players: "7v6", keywords: /קרן|קרנות|corner/i, build: () => LEGACY.corner() },
-  { id: "freekick", name: "Free Kick Routine", phase: "set_piece", ages: "U12–Senior", players: "4v5", keywords: /בעיטה חופשית|חופשית|כדור נייח|free.?kick|set.?piece/i, build: () => freeKick() },
-  { id: "throwin", name: "Throw-In Routine", phase: "set_piece", ages: "U10–Senior", players: "4v2", keywords: /חוץ|זריקת חוץ|זריקה|throw.?in/i, build: () => throwIn() },
-  { id: "buildup", name: "Build-up from the Back", phase: "possession", ages: "U12–Senior", players: "8v3", keywords: /בנייה|בניית משחק|יציאה מהשוער|מהשוער|build.?up|play out|goalkeeper|gk/i, build: (_o, req) => LEGACY.buildUp(req) },
-  { id: "diamond", name: "Diamond Passing", phase: "possession", ages: "U8–Senior", players: "4", keywords: /מסירות|חימום|טכניקה|יהלום|passing|warm.?up|technical|diamond/i, build: () => diamondPassingFixed() },
+  { id: "rondo", concepts: ["possession","rondo"], name: "Rondo (n v m)", phase: "possession", ages: "U8–Senior", players: "4v1 – 8v3", keywords: /רונדו|שמירת כדור|שמירה על הכדור|פוזשן|rondo|keep.?ball|possession|piggy/i, build: (o) => rondo(o) },
+  { id: "overload", concepts: ["overload","attack"], name: "Attacking overload (n v m)", phase: "attacking", ages: "U10–Senior", players: "2v1 – 5v3", keywords: /עדיפות|תוספת|מספרית|overload|numerical/i, build: (o) => overload(o) },
+  { id: "overlap", concepts: ["overlap","cross","wing","striker"], name: "Wing Overlap & Cross", phase: "attacking", ages: "U12–Senior", players: "5v3", keywords: /כנף|אוברלאפ|הגבהה|crossing|cross|overlap|wing/i, build: () => LEGACY.overlap() },
+  { id: "switch", concepts: ["switch","wing"], name: "Switch of Play", phase: "attacking", ages: "U14–Senior", players: "7v5", keywords: /החלפת צד|הפצה|החלפה|switch|change of (?:side|play)|long ball/i, build: () => switchPlay() },
+  { id: "thirdman", concepts: ["combo","striker","midfield"], name: "Third-Man Combination", phase: "attacking", ages: "U14–Senior", players: "4v3", keywords: /איש שלישי|שלישי|שילוב|קומבינציה|third.?man|combination|one.?two|wall.?pass/i, build: () => thirdMan() },
+  { id: "1v1", concepts: ["duel","dribble"], name: "1v1 Duels", phase: "attacking", ages: "U8–Senior", players: "1v1", keywords: /1\s*(?:v|על)\s*1|אחד על אחד|דו קרב|דריבל|1v1|one.?v.?one|dribbl/i, build: () => oneVOne() },
+  { id: "finishing", concepts: ["shoot","striker"], name: "Finishing Combination", phase: "attacking", ages: "U10–Senior", players: "3 + GK", keywords: /בעיטה|סיום|גימור|שער|finish|shoot|shot|goal/i, build: () => LEGACY.finishing() },
+  { id: "pressing", concepts: ["press","defend"], name: "Pressing Trigger Drill", phase: "defending", ages: "U14–Senior", players: "8v6", keywords: /לחץ|פרסינג|לחיצה|press|trigger/i, build: () => LEGACY.press() },
+  { id: "lowblock", concepts: ["defend","block"], name: "Low-Block Shifting", phase: "defending", ages: "U14–Senior", players: "11v5", keywords: /הגנה|בלוק|הגנה נמוכה|שמירת צורה|defen|low.?block|shape|shift/i, build: () => lowBlock() },
+  { id: "counter", concepts: ["counter","attack","striker"], name: "3v2 Counter Attack", phase: "transition_attack", ages: "U12–Senior", players: "3v2", keywords: /מתפרצת|מעבר|התקפה מהירה|counter|transition|break/i, build: () => LEGACY.counter() },
+  { id: "counterpress", concepts: ["transition","press","defend"], name: "Counter-Press (6s)", phase: "transition_defend", ages: "U14–Senior", players: "6v4", keywords: /לחץ נגדי|אחרי איבוד|איבוד כדור|counter.?press|gegenpress|losing the ball|regain|recover/i, build: () => counterPress() },
+  { id: "corner", concepts: ["setpiece","corner","cross"], name: "Corner Kick Routine", phase: "set_piece", ages: "U12–Senior", players: "7v6", keywords: /קרן|קרנות|corner/i, build: () => LEGACY.corner() },
+  { id: "freekick", concepts: ["setpiece","freekick","shoot"], name: "Free Kick Routine", phase: "set_piece", ages: "U12–Senior", players: "4v5", keywords: /בעיטה חופשית|חופשית|כדור נייח|free.?kick|set.?piece/i, build: () => freeKick() },
+  { id: "throwin", concepts: ["setpiece","throwin","wing"], name: "Throw-In Routine", phase: "set_piece", ages: "U10–Senior", players: "4v2", keywords: /חוץ|זריקת חוץ|זריקה|throw.?in/i, build: () => throwIn() },
+  { id: "buildup", concepts: ["buildup","gk","midfield"], name: "Build-up from the Back", phase: "possession", ages: "U12–Senior", players: "8v3", keywords: /בנייה|בניית משחק|יציאה מהשוער|מהשוער|build.?up|play out|goalkeeper|gk/i, build: (_o, req) => LEGACY.buildUp(req) },
+  { id: "diamond", concepts: ["pass","warmup"], name: "Diamond Passing", phase: "possession", ages: "U8–Senior", players: "4", keywords: /מסירות|חימום|טכניקה|יהלום|passing|warm.?up|technical|diamond/i, build: () => diamondPassingFixed() },
 ]
 
 function diamondPassingFixed(): AIDrillResult {
@@ -214,6 +215,63 @@ function diamondPassingFixed(): AIDrillResult {
   return { ...d, steps }
 }
 
+
+// ───────────────────────── everyday-language understanding (Hebrew + English slang) ─────────────────────────
+const LEXICON: Record<string, RegExp> = {
+  overlap: /עוקף|עוקפ|עקיפ|אוברלאפ|מאחורי הקיצוני|מאחורי הכנף|בחוץ של|overlap|run(?:s|ning)? (?:around|outside)|underlap|פנימה מאחורי/i,
+  cross: /מגביה|מגבי|הגבה|הגבהה|קרוס|כדור לרחבה|כדור גבוה|מרכז|מרכוז|שחרור לרחבה|cross|deliver|whip|ball into the box|תוך הרחבה/i,
+  wing: /קיצוני|כנף|אגף|שפה|קו הצד|wing|winger|full.?back|wide|touchline|flank|מגן/i,
+  striker: /חלוץ|סטרייקר|תשע|9\b|striker|forward|target man|number nine/i,
+  midfield: /קשר|קשרים|פלייר|מרכז השדה|midfield|midfielder|pivot|number (?:6|8|10)/i,
+  gk: /שוער|שוערים|goalkeeper|keeper|gk/i,
+  cb: /בלם|בלמים|center.?back|centre.?back|cb\b/i,
+  buildup: /בניי?ה|יציאה|מוציא|מוציאים|build.?up|play(?:ing)? out|from the back|מהשוער/i,
+  press: /לוחץ|לוחצים|מלחיץ|לחץ|פרסינג|חוטף|חטיפה|סוגר|סוגרים|press|hunt|harass|close down|win it back|trigger/i,
+  defend: /מגן על|שומר|הגנה|מגנים|חוסם|חסימה|שמירה|defend|defence|defense|protect|block|shape|compact/i,
+  block: /בלוק|קומפקט|צפיפות|compact|low.?block|mid.?block/i,
+  counter: /יוצאים מהר|יציאה מהירה|מהר קדימה|חוטפים ו|מתפרצת|מתפרץ|פורצים|מהיר קדימה|מעבר מהיר|counter|break(?:away)?|fast break|quick (?:attack|transition)/i,
+  transition: /מעבר|אחרי איבוד|אחרי חטיפה|איבדנו|transition|after losing|after winning|turnover/i,
+  shoot: /בועט|בעיטה|בעיטות|קולע|כובש|סיום|גימור|שער|shoot|shot|finish|score|strike/i,
+  duel: /אחד על אחד|דו.?קרב|עימות|1v1|one.?v.?one|duel/i,
+  dribble: /דריבל|כדרור|מכדרר|עוקף שחקן|dribble|take on|beat (?:a |the )?(?:man|defender)/i,
+  combo: /קומבינציה|שילוב|איש שלישי|שלישי|וול|קיר|חילופי מסירות|one.?two|give.?and.?go|wall.?pass|combination|third.?man|link.?up/i,
+  switch: /החלפת צד|מחליף צד|הפצה|מעביר לצד השני|מצד לצד|switch|change (?:the )?(?:side|point)|diagonal|long (?:ball|pass)/i,
+  possession: /שמירת כדור|שמירה על הכדור|פוזשן|החזקת כדור|מחזיקים|possession|keep.?ball|retain/i,
+  rondo: /רונדו|rondo|piggy|בתוך הריבוע|ריבוע/i,
+  pass: /מסירה|מסירות|מוסר|passing|passes/i,
+  warmup: /חימום|טכני|טכניקה|warm.?up|technical/i,
+  setpiece: /כדור נייח|כדורים נייחים|set.?piece/i,
+  corner: /קרן|קרנות|corner/i,
+  freekick: /בעיטה חופשית|חופשית|עונשין|free.?kick/i,
+  throwin: /זריקת חוץ|זריקה מהצד|זורק|throw.?in/i,
+  attack: /התקפ|תוקפ|מתקפ|תקיפה|attack|create chances|chance creation/i,
+  overload: /עדיפות|תוספת שחקן|מספרית|overload|numerical|extra man|\d\s*(?:v|vs|נגד|על)\s*\d/i,
+}
+
+export function detectConcepts(req: string): Set<string> {
+  const text = req.replace(/[\u0591-\u05C7]/g, "")
+  const out = new Set<string>()
+  for (const [k, re] of Object.entries(LEXICON)) if (re.test(text)) out.add(k)
+  return out
+}
+
+/** Which side of the pitch the coach talks about (mirror the drill when "left"). */
+function wantsLeft(req: string): boolean {
+  return /שמאל|שמאלי|left/i.test(req) && !/ימין|ימני|right/i.test(req)
+}
+
+function mirror(d: AIDrillResult): AIDrillResult {
+  const f = (p: AIPlayer): AIPlayer => ({ ...p, y: r1(68 - p.y) })
+  return {
+    ...d,
+    steps: d.steps.map((s) => ({
+      ...s, homePlayers: s.homePlayers.map(f), awayPlayers: s.awayPlayers.map(f),
+      ball: { x: s.ball.x, y: r1(68 - s.ball.y) },
+      arrows: s.arrows.map((a) => ({ ...a, fromY: r1(68 - a.fromY), toY: r1(68 - a.toY) })),
+    })),
+  }
+}
+
 // ───────────────────────── search ─────────────────────────
 export function parseMatchup(req: string): { a: number; d: number } | null {
   const m = req.match(/(\d{1,2})\s*(?:v|vs|x|נגד|על|against)\s*(\d{1,2})/i)
@@ -222,10 +280,12 @@ export function parseMatchup(req: string): { a: number; d: number } | null {
 
 export function searchDrills(req: string): Array<{ entry: DrillEntry; score: number }> {
   const mu = parseMatchup(req)
+  const cs = detectConcepts(req)
   const scored = DRILLS.map((entry) => {
     let score = 0
     const hits = req.match(new RegExp(entry.keywords.source, "gi"))
     if (hits) score += hits.length * 2
+    for (const c of entry.concepts ?? []) if (cs.has(c)) score += 3
     // generic "n v m" requests fit rondo (many v few, ≥4 attackers) or overload (otherwise)
     if (mu && entry.id === "rondo" && /רונדו|rondo|possession|שמירת/i.test(req)) score += 4
     else if (mu && entry.id === "overload" && mu.a > 1 && !/רונדו|rondo/i.test(req)) score += 3
@@ -244,10 +304,16 @@ export function buildFromLibrary(req: string): AIDrillResult {
   if (!mu && entry.id === "overload") { o.a = 3; o.d = 2 }
   const drill = entry.build(o, req)
   if (o.steps && drill.steps.length !== o.steps) drill.steps = fitSteps(drill.steps, o.steps)
-  return { ...drill, source: "library" }
+  const done = wantsLeft(req) ? mirror(drill) : drill
+  return { ...done, source: "library" }
 }
 
 /** Compact reference drills for grounding an LLM (adapt, don't copy). */
+export const GLOSSARY =
+  "Football slang glossary (Hebrew/English): מגן=full-back, קיצוני/כנף=winger, חלוץ=striker, קשר=midfielder, בלם=center-back, שוער=goalkeeper, " +
+  "עוקף/אוברלאפ=overlapping run, מגביה=crosses into the box, חוטף=wins the ball, לוחץ=presses, מתפרצת=counter-attack, קיר/וול=wall pass, " +
+  "החלפת צד=switch of play. Interpret casual descriptions as a coach would and turn them into a precise, step-by-step drill."
+
 export function referenceExamples(req: string, k = 2): string {
   const picks = searchDrills(req).slice(0, k).map((x) => x.entry)
   const list = picks.length ? picks : [DRILLS.find((x) => x.id === "buildup")!, DRILLS.find((x) => x.id === "overload")!]
